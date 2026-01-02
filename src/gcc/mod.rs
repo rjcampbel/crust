@@ -2,10 +2,9 @@ use std::process::Command;
 use anyhow::{anyhow, Result};
 use std::path::Path;
 
-pub fn preprocess(filename: &Path) -> Result<()> {
-   let dest = filename.with_extension("i");
+pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
    let output = Command::new("gcc")
-         .args(["-E", "-P", filename.to_string_lossy().as_ref(), "-o", dest.to_string_lossy().as_ref()])
+         .args(["-E", "-P", source.to_string_lossy().as_ref(), "-o", dest.to_string_lossy().as_ref()])
          .output()?;
 
    if !output.status.success() {

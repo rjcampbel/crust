@@ -1,4 +1,5 @@
 mod gcc;
+mod lexer;
 
 use anyhow::Result;
 use clap::Parser;
@@ -26,9 +27,21 @@ struct Cli {
 fn main() -> Result<()> {
     let args = Cli::parse();
     let source = args.source;
-    preprocess(&source)
+    let pp_source = source.with_extension("i");
+    preprocess(&source, &pp_source)?;
+
+    if args.lex {
+        lex(&pp_source)?
+    }
+
+    Ok(())
 }
 
-pub fn preprocess(source: &Path) -> Result<()> {
-    gcc::preprocess(source)
+pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
+    gcc::preprocess(source, dest)
+}
+
+pub fn lex(source: &Path) -> Result<()> {
+    lexer::lex(&source)?;
+    Ok(())
 }
