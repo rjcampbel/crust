@@ -59,6 +59,8 @@ impl<'a> Lexer<'a> {
                while let Some(t) = chars.peek() {
                   if t.is_alphanumeric() || *t == '_' {
                      token_value.push(chars.next().unwrap());
+                  } else {
+                     break;
                   }
                }
                match token_value.as_str() {
