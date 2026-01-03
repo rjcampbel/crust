@@ -1,6 +1,6 @@
 mod token;
 
-use anyhow::{bail, anyhow, Result};
+use anyhow::{bail, Result};
 use std::fs;
 use std::path::Path;
 use token::{Token, TokenType};
@@ -24,17 +24,22 @@ struct Lexer<'a> {
 
 #[derive(Error, Debug)]
 enum LexError {
-   #[error("[line {}] Error at '{}': Invalid Token", line, location)]
+   #[error("[line {}] Error at '{}': Invalid Token", line, msg)]
    InvalidToken {
       line: usize,
-      location: String,
+      msg: String,
    },
 
-   #[error("[line {}] Error at '{}': Invalid Identifier", line, identifier)]
+   #[error("[line {}] Error at '{}': Invalid Identifier", line, msg)]
    InvalidIdentifier {
       line: usize,
-      identifier: String
+      msg: String
    }
+}
+
+enum ErrorType {
+   InvalidToken,
+   InvalidIdentifier,
 }
 
 impl<'a> Lexer<'a> {
@@ -49,26 +54,37 @@ impl<'a> Lexer<'a> {
    }
 
    fn lex(&mut self) -> Result<()> {
-      while self.current < self.source.len() {
+      while !self.at_end() {
          self.start = self.current;
-         let c = self.advance();
-         match c {
-            '(' => self.add_token(TokenType::OpenParen, String::from(c)),
-            ')' => self.add_token(TokenType::CloseParen, String::from(c)),
-            '{' => self.add_token(TokenType::OpenBrace, String::from(c)),
-            '}' => self.add_token(TokenType::CloseBrace, String::from(c)),
-            ';' => self.add_token(TokenType::Semicolon, String::from(c)),
-            '\n'=> self.line += 1,
-            _ if c.is_whitespace() => (),
-            _ if c.is_digit(10) => self.number()?,
-            _ if c.is_alphabetic() || c == '_' => self.identifier()?,
-            _ => bail!(LexError::InvalidToken { line: self.line, location: String::from(c) })
-         }
+         self.scan_token()?;
       }
+
+      let token = Token::new(TokenType::EOF, String::from(""), self.line);
+      self.tokens.push(token);
+
       Ok(())
    }
 
-   fn add_token(&mut self, token_type: TokenType, lexeme: String) {
+   fn scan_token(&mut self) -> Result<()> {
+      let c = self.advance();
+      match c {
+         '(' => self.add_token(TokenType::OpenParen),
+         ')' => self.add_token(TokenType::CloseParen),
+         '{' => self.add_token(TokenType::OpenBrace),
+         '}' => self.add_token(TokenType::CloseBrace),
+         ';' => self.add_token(TokenType::Semicolon),
+         '\n'=> self.line += 1,
+         _ if c.is_whitespace() => (),
+         _ if c.is_digit(10) => self.number()?,
+         _ if c.is_alphabetic() || c == '_' => self.identifier()?,
+         _ => bail!(error(self.line, String::from(c), ErrorType::InvalidToken))
+      };
+
+      Ok(())
+   }
+
+   fn add_token(&mut self, token_type: TokenType) {
+      let lexeme = self.lexeme();
       let token = Token::new(token_type, lexeme, self.line);
       self.tokens.push(token);
    }
@@ -83,36 +99,60 @@ impl<'a> Lexer<'a> {
       self.source[self.current]
    }
 
+   fn at_end(&self) -> bool {
+      self.current >= self.source.len()
+   }
+
+   fn lexeme(&self) -> String {
+      self.source[self.start..self.current].iter().collect()
+   }
+
    fn number(&mut self) -> Result<()> {
-      while self.current < self.source.len() && self.peek().is_digit(10) {
+      while !self.at_end() && is_digit(self.peek()) {
          self.advance();
       }
-      match self.peek() {
-         c => {
-            if c.is_alphabetic() || c == '_' {
-               while self.current < self.source.len() && (self.peek().is_alphabetic() || self.peek() == '_') {
-                  self.advance();
-               }
-               bail!(LexError::InvalidIdentifier { line: self.line, identifier: self.source[self.start..self.current].iter().collect::<String>() });
-            }
+
+      if is_alpha(self.peek()) {
+         while !self.at_end() && is_alpha(self.peek()) {
+            self.advance();
          }
+         bail!(error(self.line, self.lexeme(), ErrorType::InvalidIdentifier))
       }
-      let token_value = self.source[self.start..self.current].iter().collect::<String>();
-      self.add_token(TokenType::Integer(token_value.parse::<u64>()?), token_value);
+
+      let token_string = self.lexeme();
+      self.add_token(TokenType::Integer(token_string.parse::<u64>()?));
+
       Ok(())
    }
 
    fn identifier(&mut self) -> Result<()> {
-      while self.current < self.source.len() && (self.peek().is_alphabetic() || self.peek() == '_') {
+      while !self.at_end() && is_alpha(self.peek()) {
          self.advance();
       }
-      let token_value = self.source[self.start..self.current].iter().collect::<String>();
-      match token_value.as_str() {
-         "int" => &self.add_token(TokenType::Int, token_value),
-         "void" => &self.add_token(TokenType::Void, token_value),
-         "return" => &self.add_token(TokenType::Return, token_value),
-         _ => &self.add_token(TokenType::Identifier(token_value.clone()), token_value)
+
+      let token_string = self.lexeme();
+      match token_string.as_str() {
+         "int"    => &self.add_token(TokenType::Int),
+         "void"   => &self.add_token(TokenType::Void),
+         "return" => &self.add_token(TokenType::Return),
+         _        => &self.add_token(TokenType::Identifier(token_string.clone()))
       };
+
       Ok(())
+   }
+}
+
+fn is_alpha(c: char) -> bool {
+   c.is_alphabetic() || c == '_'
+}
+
+fn is_digit(c: char) -> bool {
+   c.is_digit(10)
+}
+
+fn error(line: usize, msg: String, err_type: ErrorType) -> LexError {
+   match err_type {
+      ErrorType::InvalidIdentifier => LexError::InvalidIdentifier { line, msg },
+      ErrorType::InvalidToken => LexError::InvalidToken { line, msg }
    }
 }
