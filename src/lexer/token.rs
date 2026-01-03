@@ -33,12 +33,4 @@ impl Token {
          line_number,
       }
    }
-
-   // pub fn token_type(&self) -> &TokenType {
-   //    &self.token_type
-   // }
-
-   // pub fn line_number(&self) -> usize {
-   //    self.line_number
-   // }
 }
