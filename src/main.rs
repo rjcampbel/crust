@@ -21,7 +21,11 @@ struct Cli {
 
     /// Run only the lexer, parser, and assembly generation
     #[arg(long, short)]
-    codegen: bool
+    codegen: bool,
+
+    /// Print all the scanned tokens
+    #[arg(long)]
+    print_tokens: bool,
 }
 
 fn main() -> Result<()> {
@@ -31,7 +35,7 @@ fn main() -> Result<()> {
     preprocess(&source, &pp_source)?;
 
     if args.lex {
-        lex(&pp_source)?
+        lex(&pp_source, args.print_tokens)?
     }
 
     Ok(())
@@ -41,7 +45,7 @@ pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
     gcc::preprocess(source, dest)
 }
 
-pub fn lex(source: &Path) -> Result<()> {
-    lexer::lex(&source)?;
+pub fn lex(source: &Path, print_tokens: bool) -> Result<()> {
+    lexer::lex(&source, print_tokens)?;
     Ok(())
 }

@@ -6,10 +6,17 @@ use std::path::Path;
 use token::{Token, TokenType};
 use thiserror::Error;
 
-pub fn lex(source: &Path) -> Result<()> {
+pub fn lex(source: &Path, print_tokens: bool) -> Result<()> {
    let source  = fs::read_to_string(source)?.chars().collect();
    let mut lexer = Lexer::new(&source);
    lexer.lex()?;
+
+   if print_tokens {
+      for token in lexer.tokens {
+         println!("{:?}", token);
+      }
+   }
+
    Ok(())
 }
 
