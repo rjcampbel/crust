@@ -1,9 +1,11 @@
 mod gcc;
 mod lexer;
+mod parser;
 
 use anyhow::Result;
 use clap::Parser;
 use std::path::{Path, PathBuf};
+use lexer::token::Token;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -35,9 +37,13 @@ fn main() -> Result<()> {
     preprocess(&source, &pp_source)?;
 
     if args.lex {
-        lex(&pp_source, args.print_tokens)?
+        let _ = lex(&pp_source, args.print_tokens)?;
     }
 
+    if args.parse {
+        let tokens = lex(&pp_source, args.print_tokens)?;
+        parse(&tokens)?
+    }
     Ok(())
 }
 
@@ -45,7 +51,11 @@ pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
     gcc::preprocess(source, dest)
 }
 
-pub fn lex(source: &Path, print_tokens: bool) -> Result<()> {
-    lexer::lex(&source, print_tokens)?;
-    Ok(())
+pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
+    let tokens = lexer::lex(&source, print_tokens)?;
+    Ok(tokens)
+}
+
+pub fn parse(tokens: &Vec<Token>) -> Result<()> {
+    parser::parse(&tokens)
 }

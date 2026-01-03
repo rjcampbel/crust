@@ -1,4 +1,4 @@
-mod token;
+pub mod token;
 
 use anyhow::{bail, Result};
 use std::fs;
@@ -6,18 +6,18 @@ use std::path::Path;
 use token::{Token, TokenType};
 use thiserror::Error;
 
-pub fn lex(source: &Path, print_tokens: bool) -> Result<()> {
+pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
    let source  = fs::read_to_string(source)?.chars().collect();
    let mut lexer = Lexer::new(&source);
    lexer.lex()?;
 
    if print_tokens {
-      for token in lexer.tokens {
+      for token in &lexer.tokens {
          println!("{:?}", token);
       }
    }
 
-   Ok(())
+   Ok(lexer.tokens)
 }
 
 
