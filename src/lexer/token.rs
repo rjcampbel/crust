@@ -15,6 +15,7 @@ pub enum TokenType {
     // Constands/Identifiers
     Integer(u64),
     Identifier(String),
+    EOF,
 }
 
 #[derive(Debug)]
