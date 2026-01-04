@@ -21,3 +21,21 @@ pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
 
    Ok(())
 }
+
+pub fn assemble(source: &Path, output: &Path) -> Result<()> {
+   let output = Command::new("gcc")
+      .args([
+         source.to_string_lossy().as_ref(),
+         "-o",
+         output.to_string_lossy().as_ref()
+      ])
+      .output()?;
+
+   ensure!(
+      output.status.success(),
+      "Error code: {}\n\n{}",
+      output.status.code().unwrap_or(-1),
+      String::from_utf8_lossy(&output.stderr));
+
+   Ok(())
+}

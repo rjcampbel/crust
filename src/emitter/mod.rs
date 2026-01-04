@@ -22,8 +22,6 @@ fn write_program(program: &Program, output: &mut File) -> Result<()> {
 fn write_function(function: &Function, output: &mut File) -> Result<()> {
    writeln!(output, "\t.globl _{}", function.name)?;
    writeln!(output, "_{}:", function.name)?;
-   writeln!(output, "\tpushq\t%rbp")?;
-   writeln!(output, "\tmovq\t%rsp, %rbp")?;
    for instr in &function.instructions {
       write_instruction(&instr, output)?;
    }
@@ -35,7 +33,7 @@ fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()>
       Instruction::Mov(src, dest) => {
          let src = match src {
             Operand::Immediate(value) => {
-               value.to_string()
+               format!("${}", value)
             }
             _ => {
                bail!("Unsupported source operand for mov instruction")
@@ -50,8 +48,6 @@ fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()>
          writeln!(output, "\tmovl\t{}, {}", src, dest)?;
       }
       Instruction::Return => {
-         writeln!(output, "\tmovq\t%rbp, %rsp")?;
-         writeln!(output, "\tpopq\t%rbp")?;
          writeln!(output, "\tret")?;
       }
    }

@@ -94,9 +94,14 @@ fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: boo
     let assembly_program = codegen(&program, print_assembly)?;
     let output = source.with_extension("s");
     emit_code(&assembly_program, &output)?;
+    assemble(&output, &source.with_extension(""))?;
     Ok(())
 }
 
 fn emit_code(program: &AssemblyProgram, output: &Path) -> Result<()> {
     emitter::emit_code(&program, output)
+}
+
+fn assemble(source: &Path, output: &Path) -> Result<()> {
+    gcc::assemble(source, output)
 }
