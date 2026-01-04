@@ -1,11 +1,13 @@
 mod gcc;
 mod lexer;
 mod parser;
+mod codegen;
 
 use anyhow::Result;
 use clap::Parser;
 use std::path::{Path, PathBuf};
 use lexer::token::{Token, TokenType};
+use parser::ast::Program;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -38,12 +40,22 @@ fn main() -> Result<()> {
 
     if args.lex {
         let _ = lex(&pp_source, args.print_tokens)?;
+        return Ok(());
     }
 
     if args.parse {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        parse(&tokens)?
+        let _ = parse(&tokens)?;
+        return Ok(());
     }
+
+    if args.codegen {
+        let tokens = lex(&pp_source, args.print_tokens)?;
+        let program = parse(&tokens)?;
+        codegen(&program)?;
+        return Ok(());
+    }
+
     Ok(())
 }
 
@@ -56,6 +68,10 @@ pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
     Ok(tokens)
 }
 
-pub fn parse(tokens: &Vec<Token>) -> Result<()> {
+pub fn parse(tokens: &Vec<Token>) -> Result<Program> {
     parser::parse(&tokens)
+}
+
+pub fn codegen(program: &Program) -> Result<()> {
+    codegen::codegen(&program)
 }

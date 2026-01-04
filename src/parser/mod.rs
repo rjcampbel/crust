@@ -1,4 +1,4 @@
-mod ast;
+pub mod ast;
 mod ast_printer;
 
 use anyhow::{bail, ensure, Result};
@@ -20,13 +20,12 @@ enum ErrorType {
    SyntaxError,
 }
 
-pub fn parse(tokens: &Vec<Token>) -> Result<()> {
+pub fn parse(tokens: &Vec<Token>) -> Result<Program> {
    let mut parser = Parser::new(tokens);
    let program = parser.parse()?;
    print_ast(&program);
-   Ok(())
+   Ok(program)
 }
-
 
 fn error(line: usize, msg: String, err_type: ErrorType) -> ParseError {
    match err_type {
