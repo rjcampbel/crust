@@ -3,11 +3,32 @@ mod ast;
 use anyhow::{bail, ensure, Result};
 use crate::{Token, TokenType};
 use ast::*;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+enum ParseError {
+   #[error("[line {}] Syntax Error: {}", line, msg)]
+   SyntaxError {
+      line: usize,
+      msg: String,
+   },
+}
+
+enum ErrorType {
+   SyntaxError,
+}
 
 pub fn parse(tokens: &Vec<Token>) -> Result<()> {
    let mut parser = Parser::new(tokens);
    parser.parse()?;
    Ok(())
+}
+
+
+fn error(line: usize, msg: String, err_type: ErrorType) -> ParseError {
+   match err_type {
+      ErrorType::SyntaxError => ParseError::SyntaxError { line, msg }
+   }
 }
 
 struct Parser<'a> {
@@ -35,31 +56,32 @@ impl<'a> Parser<'a> {
    }
 
    fn function(&mut self) -> Result<Function> {
-      self.consume(TokenType::Int, "Expected int")?;
+      self.consume(TokenType::Int)?;
       let name = self.identifier()?;
-      self.consume(TokenType::OpenParen, "Expected (")?;
-      self.consume(TokenType::Void, "Expected void")?;
-      self.consume(TokenType::CloseParen, "Expected )")?;
-      self.consume(TokenType::OpenBrace, "Expected {")?;
+      self.consume(TokenType::OpenParen)?;
+      self.consume(TokenType::Void)?;
+      self.consume(TokenType::CloseParen)?;
+      self.consume(TokenType::OpenBrace)?;
       let stmt = self.statement()?;
-      self.consume(TokenType::CloseBrace, "Expected }")?;
+      self.consume(TokenType::CloseBrace)?;
       Ok(Function { name: name, stmt: stmt })
    }
 
    fn identifier(&mut self) -> Result<String> {
-      match self.peek().token_type.clone() {
+      let t = self.peek();
+      match t.token_type.clone() {
          TokenType::Identifier(i) => {
             self.advance();
             return Ok(i.clone());
          },
-         _ => { bail!("Expected an identifier") }
+         _ => { bail!(error(t.line_number, format!("Expected an identifier, found '{}'", t.lexeme), ErrorType::SyntaxError)) }
       }
    }
 
    fn statement(&mut self) -> Result<Stmt> {
-      self.consume(TokenType::Return, "Expected return")?;
+      self.consume(TokenType::Return)?;
       let expr = self.expression()?;
-      self.consume(TokenType::Semicolon, "Expected ;")?;
+      self.consume(TokenType::Semicolon)?;
       Ok(Stmt::Return(expr))
    }
 
@@ -69,20 +91,21 @@ impl<'a> Parser<'a> {
    }
 
    fn integer_constant(&mut self) -> Result<u64> {
-      match self.peek().token_type.clone() {
+      let t = self.peek();
+      match t.token_type.clone() {
          TokenType::Integer(i) => {
             self.advance();
             return Ok(i.clone());
          },
-         _ => { bail!("Expected an integer") }
+         _ => { bail!(error(t.line_number, format!("Expected an integer, found '{}'", t.lexeme), ErrorType::SyntaxError)) }
       }
    }
 
-   fn consume(&mut self, token_type: TokenType, msg: &str) -> Result<&Token> {
+   fn consume(&mut self, token_type: TokenType) -> Result<&Token> {
       if self.check(&token_type) {
          return Ok(self.advance());
       }
-      bail!(msg.to_string())
+      bail!(error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), ErrorType::SyntaxError))
    }
 
    fn check(&self, token_type: &TokenType) -> bool {
