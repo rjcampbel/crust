@@ -2,6 +2,7 @@ mod gcc;
 mod lexer;
 mod parser;
 mod codegen;
+mod emitter;
 
 use anyhow::Result;
 use clap::Parser;
@@ -70,26 +71,32 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
+fn preprocess(source: &Path, dest: &Path) -> Result<()> {
     gcc::preprocess(source, dest)
 }
 
-pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
+fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
     let tokens = lexer::lex(&source, print_tokens)?;
     Ok(tokens)
 }
 
-pub fn parse(tokens: &Vec<Token>, print_ast: bool) -> Result<Program> {
+fn parse(tokens: &Vec<Token>, print_ast: bool) -> Result<Program> {
     parser::parse(&tokens, print_ast)
 }
 
-pub fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {
+fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {
     codegen::codegen(&program, print_assembly)
 }
 
-pub fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: bool) -> Result<()> {
+fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: bool) -> Result<()> {
     let tokens = lex(&source, print_tokens)?;
     let program = parse(&tokens, print_ast)?;
     let assembly_program = codegen(&program, print_assembly)?;
+    let output = source.with_extension("s");
+    emit_code(&assembly_program, &output)?;
     Ok(())
+}
+
+fn emit_code(program: &AssemblyProgram, output: &Path) -> Result<()> {
+    emitter::emit_code(&program, output)
 }
