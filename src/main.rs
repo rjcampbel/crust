@@ -5,7 +5,7 @@ mod parser;
 use anyhow::Result;
 use clap::Parser;
 use std::path::{Path, PathBuf};
-use lexer::token::Token;
+use lexer::token::{Token, TokenType};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
