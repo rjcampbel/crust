@@ -8,6 +8,7 @@ use clap::Parser;
 use std::path::{Path, PathBuf};
 use lexer::token::{Token, TokenType};
 use parser::ast::Program;
+use codegen::assembly::Program as AssemblyProgram;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -30,6 +31,14 @@ struct Cli {
     /// Print all the scanned tokens
     #[arg(long)]
     print_tokens: bool,
+
+    /// Print the AST after parsing
+    #[arg(long)]
+    print_ast: bool,
+
+    /// Print the assembly AST after code generation
+    #[arg(long)]
+    print_assembly: bool,
 }
 
 fn main() -> Result<()> {
@@ -45,16 +54,18 @@ fn main() -> Result<()> {
 
     if args.parse {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        let _ = parse(&tokens)?;
+        let _ = parse(&tokens, args.print_ast)?;
         return Ok(());
     }
 
     if args.codegen {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        let program = parse(&tokens)?;
-        codegen(&program)?;
+        let program = parse(&tokens, args.print_ast)?;
+        let _ = codegen(&program, args.print_assembly)?;
         return Ok(());
     }
+
+    build(&pp_source, args.print_tokens, args.print_ast, args.print_assembly)?;
 
     Ok(())
 }
@@ -68,10 +79,17 @@ pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
     Ok(tokens)
 }
 
-pub fn parse(tokens: &Vec<Token>) -> Result<Program> {
-    parser::parse(&tokens)
+pub fn parse(tokens: &Vec<Token>, print_ast: bool) -> Result<Program> {
+    parser::parse(&tokens, print_ast)
 }
 
-pub fn codegen(program: &Program) -> Result<()> {
-    codegen::codegen(&program)
+pub fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {
+    codegen::codegen(&program, print_assembly)
+}
+
+pub fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: bool) -> Result<()> {
+    let tokens = lex(&source, print_tokens)?;
+    let program = parse(&tokens, print_ast)?;
+    let assembly_program = codegen(&program, print_assembly)?;
+    Ok(())
 }

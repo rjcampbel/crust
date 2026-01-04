@@ -5,7 +5,6 @@ use anyhow::{bail, ensure, Result};
 use crate::{Token, TokenType};
 use ast::*;
 use thiserror::Error;
-use ast_printer::print_ast;
 
 #[derive(Error, Debug)]
 enum ParseError {
@@ -20,10 +19,12 @@ enum ErrorType {
    SyntaxError,
 }
 
-pub fn parse(tokens: &Vec<Token>) -> Result<Program> {
+pub fn parse(tokens: &Vec<Token>, print_ast: bool) -> Result<Program> {
    let mut parser = Parser::new(tokens);
    let program = parser.parse()?;
-   print_ast(&program);
+   if print_ast {
+      ast_printer::print_ast(&program);
+   }
    Ok(program)
 }
 

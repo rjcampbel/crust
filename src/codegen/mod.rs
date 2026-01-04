@@ -1,4 +1,4 @@
-mod assembly;
+pub mod assembly;
 mod assembly_printer;
 
 use crate::parser::ast;
@@ -6,10 +6,12 @@ use anyhow::Result;
 use assembly::*;
 use assembly_printer::print_assembly_ast;
 
-pub fn codegen(program: &ast::Program) -> Result<()> {
+pub fn codegen(program: &ast::Program, print_assembly: bool) -> Result<Program> {
    let assembly_program = generate_assembly(&program)?;
-   print_assembly_ast(&assembly_program);
-   Ok(())
+   if print_assembly {
+      print_assembly_ast(&assembly_program);
+   }
+   Ok(assembly_program)
 }
 
 fn generate_assembly(program: &ast::Program) -> Result<Program> {
@@ -21,7 +23,7 @@ fn generate_assembly(program: &ast::Program) -> Result<Program> {
    }
 }
 
-fn generate_function(func: &ast::Function) -> Result<(Function)> {
+fn generate_function(func: &ast::Function) -> Result<Function> {
    let instructions = generate_instructions(&func.stmt)?;
    let assembly_function = Function {
       name: func.name.clone(),
