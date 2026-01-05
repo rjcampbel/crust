@@ -80,6 +80,15 @@ impl<'a> Lexer<'a> {
          '{' => self.add_token(TokenType::OpenBrace),
          '}' => self.add_token(TokenType::CloseBrace),
          ';' => self.add_token(TokenType::Semicolon),
+         '~' => self.add_token(TokenType::Tilde),
+         '-' => {
+            if !self.at_end() && self.peek() == '-' {
+               self.advance();
+               self.add_token(TokenType::DoubleDash);
+            } else {
+               self.add_token(TokenType::Dash);
+            }
+         },
          '\n'=> self.line += 1,
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,

@@ -8,6 +8,9 @@ pub enum TokenType {
     OpenBrace,
     CloseBrace,
     Semicolon,
+    Tilde,
+    Dash,
+    DoubleDash,
 
     // Keywords
     Int,
@@ -45,6 +48,9 @@ impl fmt::Display for TokenType {
          TokenType::OpenBrace => write!(f, "{{"),
          TokenType::CloseBrace => write!(f, "}}"),
          TokenType::Semicolon => write!(f, ";"),
+         TokenType::Tilde => write!(f, "~"),
+         TokenType::Dash => write!(f, "-"),
+         TokenType::DoubleDash => write!(f, "--"),
          TokenType::Int => write!(f, "int"),
          TokenType::Void => write!(f, "void"),
          TokenType::Return => write!(f, "return"),
