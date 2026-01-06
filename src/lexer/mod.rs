@@ -151,7 +151,7 @@ impl<'a> Lexer<'a> {
          "int"    => &self.add_token(TokenType::Int),
          "void"   => &self.add_token(TokenType::Void),
          "return" => &self.add_token(TokenType::Return),
-         _        => &self.add_token(TokenType::Identifier(token_string.clone()))
+         _        => &self.add_token(TokenType::Identifier)
       };
 
       Ok(())

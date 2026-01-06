@@ -2,7 +2,7 @@ pub mod assembly;
 mod assembly_printer;
 
 use crate::parser::ast;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use assembly::*;
 use assembly_printer::print_assembly_ast;
 
@@ -47,6 +47,9 @@ fn generate_move_instruction(expr: &ast::Expr) -> Result<Instruction> {
    match expr {
       ast::Expr::Integer(value) => {
          Ok(Instruction::Mov(Operand::Immediate(*value), Operand::Register))
+      },
+      ast::Expr::UnaryOp { .. } => {
+         bail!("unsupported")
       }
    }
 }

@@ -13,4 +13,13 @@ pub enum Stmt {
 
 pub enum Expr {
    Integer(u64),
+   UnaryOp {
+      operator: UnaryOp,
+      expr: Box<Expr>,
+   },
+}
+
+pub enum UnaryOp {
+   Complement,
+   Negate,
 }

@@ -19,7 +19,7 @@ pub enum TokenType {
 
     // Constands/Identifiers
     Integer(u64),
-    Identifier(String),
+    Identifier,
     EOF,
 }
 
@@ -55,7 +55,7 @@ impl fmt::Display for TokenType {
          TokenType::Void => write!(f, "void"),
          TokenType::Return => write!(f, "return"),
          TokenType::Integer(i) => write!(f, "{}", i),
-         TokenType::Identifier(s) => write!(f, "{}", s),
+         TokenType::Identifier => write!(f, "identifier"),
          TokenType::EOF => write!(f, "EOF"),
       }
    }

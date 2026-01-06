@@ -55,13 +55,13 @@ fn main() -> Result<()> {
 
     if args.parse {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        let _ = parse(&tokens, args.print_ast)?;
+        let _ = parse(tokens, args.print_ast)?;
         return Ok(());
     }
 
     if args.codegen {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        let program = parse(&tokens, args.print_ast)?;
+        let program = parse(tokens, args.print_ast)?;
         let _ = codegen(&program, args.print_assembly)?;
         return Ok(());
     }
@@ -80,8 +80,8 @@ fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
     Ok(tokens)
 }
 
-fn parse(tokens: &Vec<Token>, print_ast: bool) -> Result<Program> {
-    parser::parse(&tokens, print_ast)
+fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<Program> {
+    parser::parse(tokens, print_ast)
 }
 
 fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {
@@ -90,7 +90,7 @@ fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {
 
 fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: bool) -> Result<()> {
     let tokens = lex(&source, print_tokens)?;
-    let program = parse(&tokens, print_ast)?;
+    let program = parse(tokens, print_ast)?;
     let assembly_program = codegen(&program, print_assembly)?;
     let output = source.with_extension("s");
     emit_code(&assembly_program, &output)?;

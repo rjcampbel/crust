@@ -19,7 +19,7 @@ enum ErrorType {
    SyntaxError,
 }
 
-pub fn parse(tokens: &Vec<Token>, print_ast: bool) -> Result<Program> {
+pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<Program> {
    let mut parser = Parser::new(tokens);
    let program = parser.parse()?;
    if print_ast {
@@ -34,13 +34,13 @@ fn error(line: usize, msg: String, err_type: ErrorType) -> ParseError {
    }
 }
 
-struct Parser<'a> {
-   tokens: &'a Vec<Token>,
+struct Parser {
+   tokens: Vec<Token>,
    current: usize,
 }
 
-impl<'a> Parser<'a> {
-   fn new(tokens: &'a Vec<Token>) -> Self {
+impl Parser {
+   fn new(tokens: Vec<Token>) -> Self {
       Self {
          tokens,
          current: 0,
@@ -71,13 +71,15 @@ impl<'a> Parser<'a> {
    }
 
    fn identifier(&mut self) -> Result<String> {
-      let t = self.peek();
-      match t.token_type.clone() {
-         TokenType::Identifier(i) => {
+      match self.peek().token_type {
+         TokenType::Identifier => {
             self.advance();
-            return Ok(i.clone());
+            Ok(self.previous().lexeme.clone())
          },
-         _ => { bail!(error(t.line_number, format!("Expected an identifier, found '{}'", t.lexeme), ErrorType::SyntaxError)) }
+         _ => {
+            let t = self.peek();
+            bail!(error(t.line_number, format!("Expected an identifier, found '{}'", t.lexeme), ErrorType::SyntaxError))
+         }
       }
    }
 
@@ -89,18 +91,42 @@ impl<'a> Parser<'a> {
    }
 
    fn expression(&mut self) -> Result<Expr> {
-      let val = self.integer_constant()?;
-      Ok(Expr::Integer(val))
+      let expr = self.unary()?;
+      Ok(expr)
    }
 
-   fn integer_constant(&mut self) -> Result<u64> {
-      let t = self.peek();
-      match t.token_type.clone() {
+   fn unary(&mut self) -> Result<Expr> {
+      if self.match_token(TokenType::Dash) || self.match_token(TokenType::Tilde) {
+         let operator_type = self.previous().token_type.clone();
+         let expr = self.unary()?;
+         return Ok(Expr::UnaryOp {
+            operator: match operator_type {
+               TokenType::Dash => UnaryOp::Negate,
+               TokenType::Tilde => UnaryOp::Complement,
+               _ => unreachable!(),
+            },
+            expr: Box::new(expr),
+         });
+      }
+      self.primary()
+   }
+
+   fn primary(&mut self) -> Result<Expr> {
+      match self.peek().token_type {
          TokenType::Integer(i) => {
             self.advance();
-            return Ok(i.clone());
+            Ok(Expr::Integer(i))
          },
-         _ => { bail!(error(t.line_number, format!("Expected an integer, found '{}'", t.lexeme), ErrorType::SyntaxError)) }
+         TokenType::OpenParen => {
+            self.advance();
+            let expr = self.expression()?;
+            self.consume(TokenType::CloseParen)?;
+            Ok(expr)
+         },
+         _ => {
+            let t = self.peek();
+            bail!(error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), ErrorType::SyntaxError))
+         }
       }
    }
 
@@ -111,7 +137,19 @@ impl<'a> Parser<'a> {
       bail!(error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), ErrorType::SyntaxError))
    }
 
-   fn check(&self, token_type: &TokenType) -> bool {
+   fn match_token(&mut self, token_type: TokenType) -> bool {
+      if self.check(&token_type) {
+         self.advance();
+         return true;
+      }
+      false
+   }
+
+   fn previous(&mut self) -> &Token {
+      &self.tokens[self.current - 1]
+   }
+
+   fn check(&mut self, token_type: &TokenType) -> bool {
       if self.at_end() {
          return false;
       }
@@ -124,11 +162,11 @@ impl<'a> Parser<'a> {
       return t;
    }
 
-   fn peek(&self) -> &Token {
+   fn peek(&mut self) -> &Token {
       &self.tokens[self.current]
    }
 
-   fn at_end(&self) -> bool {
+   fn at_end(&mut self) -> bool {
       self.peek().token_type == TokenType::EOF
    }
 }
