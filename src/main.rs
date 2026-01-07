@@ -3,6 +3,7 @@ mod lexer;
 mod parser;
 mod codegen;
 mod emitter;
+mod tacky;
 
 use anyhow::Result;
 use clap::Parser;
@@ -10,6 +11,7 @@ use std::path::{Path, PathBuf};
 use lexer::token::{Token, TokenType};
 use parser::ast::Program;
 use codegen::assembly::Program as AssemblyProgram;
+use tacky::tacky::TackyProgram;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -25,6 +27,10 @@ struct Cli {
     #[arg(long, short)]
     parse: bool,
 
+    /// Run only the lexer, parser, and tacky generation
+    #[arg(long, short)]
+    tacky: bool,
+
     /// Run only the lexer, parser, and assembly generation
     #[arg(long, short)]
     codegen: bool,
@@ -36,6 +42,10 @@ struct Cli {
     /// Print the AST after parsing
     #[arg(long)]
     print_ast: bool,
+
+    /// Print the tacky ast
+    #[arg(long)]
+    print_tacky: bool,
 
     /// Print the assembly AST after code generation
     #[arg(long)]
@@ -56,6 +66,13 @@ fn main() -> Result<()> {
     if args.parse {
         let tokens = lex(&pp_source, args.print_tokens)?;
         let _ = parse(tokens, args.print_ast)?;
+        return Ok(());
+    }
+
+    if args.tacky {
+        let tokens = lex(&pp_source, args.print_tokens)?;
+        let program = parse(tokens, args.print_ast)?;
+        let _ = gen_tacky(&program, args.print_tacky)?;
         return Ok(());
     }
 
@@ -82,6 +99,10 @@ fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
 
 fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<Program> {
     parser::parse(tokens, print_ast)
+}
+
+fn gen_tacky(program: &Program, print_tacky: bool) -> Result<TackyProgram> {
+    tacky::gen_tacky(&program, print_tacky)
 }
 
 fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {

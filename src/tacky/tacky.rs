@@ -1,0 +1,3 @@
+pub enum TackyProgram {
+   Function,
+}
