@@ -2,7 +2,7 @@ pub mod ast;
 mod ast_printer;
 
 use anyhow::{bail, ensure, Result};
-use crate::{Token, TokenType};
+use crate::lexer::token::{Token, TokenType};
 use ast::*;
 use thiserror::Error;
 
@@ -19,19 +19,19 @@ enum ErrorType {
    SyntaxError,
 }
 
-pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<Program> {
-   let mut parser = Parser::new(tokens);
-   let program = parser.parse()?;
-   if print_ast {
-      ast_printer::print_ast(&program);
-   }
-   Ok(program)
-}
-
 fn error(line: usize, msg: String, err_type: ErrorType) -> ParseError {
    match err_type {
       ErrorType::SyntaxError => ParseError::SyntaxError { line, msg }
    }
+}
+
+pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
+   let mut parser = Parser::new(tokens);
+   let ast = parser.parse()?;
+   if print_ast {
+      ast_printer::print_ast(&ast);
+   }
+   Ok(ast)
 }
 
 struct Parser {
@@ -47,18 +47,18 @@ impl Parser {
       }
    }
 
-   fn parse(&mut self) -> Result<Program> {
+   fn parse(&mut self) -> Result<AST> {
       let program = self.program()?;
-      Ok(program)
+      Ok(AST { program })
    }
 
    fn program(&mut self) -> Result<Program> {
       let function = self.function()?;
       ensure!(self.at_end(), "Expected end of file after function");
-      Ok(Program::Function(function))
+      Ok(function)
    }
 
-   fn function(&mut self) -> Result<Function> {
+   fn function(&mut self) -> Result<Program> {
       self.consume(TokenType::Int)?;
       let name = self.identifier()?;
       self.consume(TokenType::OpenParen)?;
@@ -67,7 +67,7 @@ impl Parser {
       self.consume(TokenType::OpenBrace)?;
       let stmt = self.statement()?;
       self.consume(TokenType::CloseBrace)?;
-      Ok(Function { name: name, stmt: stmt })
+      Ok(Program::Function { name: name, stmt: stmt })
    }
 
    fn identifier(&mut self) -> Result<String> {

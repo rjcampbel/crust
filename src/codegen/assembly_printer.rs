@@ -1,10 +1,10 @@
 use crate::codegen::assembly::*;
 
-pub fn print_assembly_ast(program: &Program) {
-   match program {
-      Program::Function(func) => {
-         println!("Assembly Function: {}", func.name);
-         for instr in &func.instructions {
+pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
+   match &assembly_ast.program {
+      AssemblyProgram::Function { name, instructions } => {
+         println!("Assembly Function: {}", name);
+         for instr in instructions {
             match instr {
                Instruction::Mov(src, dest) => {
                   println!("  MOV {:?}, {:?}", src, dest);

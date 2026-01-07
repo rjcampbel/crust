@@ -4,25 +4,25 @@ use std::path::Path;
 use std::fs::File;
 use std::io::Write;
 
-pub fn emit_code(program: &Program, output: &Path) -> Result<()> {
+pub fn emit_code(assembly_ast: &AssemblyAST, output: &Path) -> Result<()> {
    let mut output = File::create(output)?;
-   write_program(&program, &mut output)?;
+   write_program(&assembly_ast.program, &mut output)?;
    Ok(())
 }
 
-fn write_program(program: &Program, output: &mut File) -> Result<()> {
+fn write_program(program: &AssemblyProgram, output: &mut File) -> Result<()> {
    match program {
-      Program::Function(f) => {
-         write_function(&f, output)?;
+      AssemblyProgram::Function { name, instructions } => {
+         write_function(name, instructions, output)?;
       }
    }
    Ok(())
 }
 
-fn write_function(function: &Function, output: &mut File) -> Result<()> {
-   writeln!(output, "\t.globl _{}", function.name)?;
-   writeln!(output, "_{}:", function.name)?;
-   for instr in &function.instructions {
+fn write_function(name: &String, instructions: &Vec<Instruction>, output: &mut File) -> Result<()> {
+   writeln!(output, "\t.globl _{}", name)?;
+   writeln!(output, "_{}:", name)?;
+   for instr in instructions {
       write_instruction(&instr, output)?;
    }
    Ok(())

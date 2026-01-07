@@ -1,17 +1,18 @@
+mod codegen;
+mod emitter;
 mod gcc;
 mod lexer;
 mod parser;
-mod codegen;
-mod emitter;
 mod tacky;
 
 use anyhow::Result;
 use clap::Parser;
 use std::path::{Path, PathBuf};
-use lexer::token::{Token, TokenType};
-use parser::ast::Program;
-use codegen::assembly::Program as AssemblyProgram;
-use tacky::tacky::TackyProgram;
+
+use codegen::assembly::AssemblyAST;
+use lexer::token::Token;
+use parser::ast::AST;
+use tacky::tacky::TackyAST;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -71,15 +72,15 @@ fn main() -> Result<()> {
 
     if args.tacky {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        let program = parse(tokens, args.print_ast)?;
-        let _ = gen_tacky(&program, args.print_tacky)?;
+        let ast = parse(tokens, args.print_ast)?;
+        let _ = gen_tacky(&ast, args.print_tacky)?;
         return Ok(());
     }
 
     if args.codegen {
         let tokens = lex(&pp_source, args.print_tokens)?;
-        let program = parse(tokens, args.print_ast)?;
-        let _ = codegen(&program, args.print_assembly)?;
+        let ast = parse(tokens, args.print_ast)?;
+        let _ = codegen(&ast, args.print_assembly)?;
         return Ok(());
     }
 
@@ -97,30 +98,30 @@ fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
     Ok(tokens)
 }
 
-fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<Program> {
+fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
     parser::parse(tokens, print_ast)
 }
 
-fn gen_tacky(program: &Program, print_tacky: bool) -> Result<TackyProgram> {
-    tacky::gen_tacky(&program, print_tacky)
+fn gen_tacky(ast: &AST, print_tacky: bool) -> Result<TackyAST> {
+    tacky::gen_tacky(ast, print_tacky)
 }
 
-fn codegen(program: &Program, print_assembly: bool) -> Result<AssemblyProgram> {
-    codegen::codegen(&program, print_assembly)
+fn codegen(ast: &AST, print_assembly: bool) -> Result<AssemblyAST> {
+    codegen::codegen(ast, print_assembly)
 }
 
 fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: bool) -> Result<()> {
     let tokens = lex(&source, print_tokens)?;
     let program = parse(tokens, print_ast)?;
-    let assembly_program = codegen(&program, print_assembly)?;
+    let assembly_ast = codegen(&program, print_assembly)?;
     let output = source.with_extension("s");
-    emit_code(&assembly_program, &output)?;
+    emit_code(&assembly_ast, &output)?;
     assemble(&output, &source.with_extension(""))?;
     Ok(())
 }
 
-fn emit_code(program: &AssemblyProgram, output: &Path) -> Result<()> {
-    emitter::emit_code(&program, output)
+fn emit_code(assembly_ast: &AssemblyAST, output: &Path) -> Result<()> {
+    emitter::emit_code(&assembly_ast, output)
 }
 
 fn assemble(source: &Path, output: &Path) -> Result<()> {

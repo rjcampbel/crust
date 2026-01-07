@@ -1,10 +1,12 @@
-pub enum Program {
-   Function(Function),
+pub struct AssemblyAST {
+   pub program: AssemblyProgram,
 }
 
-pub struct Function {
-   pub name: String,
-   pub instructions: Vec<Instruction>,
+pub enum AssemblyProgram {
+   Function {
+      name: String,
+      instructions: Vec<Instruction>,
+   },
 }
 
 pub enum Instruction {

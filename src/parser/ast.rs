@@ -1,10 +1,12 @@
-pub enum Program {
-   Function(Function),
+pub struct AST {
+   pub program: Program,
 }
 
-pub struct Function {
-   pub name: String,
-   pub stmt: Stmt,
+pub enum Program {
+   Function {
+      name: String,
+      stmt: Stmt,
+   }
 }
 
 pub enum Stmt {

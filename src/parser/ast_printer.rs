@@ -1,10 +1,11 @@
 use crate::parser::ast::*;
 
-pub fn print_ast(program: &Program) {
-   match program {
-      Program::Function(func) => {
-         println!("Function: {}", func.name);
-         match &func.stmt {
+pub fn print_ast(ast: &AST) {
+   println!("AST:");
+   match &ast.program {
+      Program::Function { name, stmt } => {
+         println!("Function: {}", name);
+         match stmt {
             Stmt::Return(expr) => {
                println!("  Return:");
                print_expr(expr, 4);
