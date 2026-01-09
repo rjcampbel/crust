@@ -1,3 +1,5 @@
+use super::stack_allocator::StackAllocator;
+
 pub struct AssemblyAST {
    pub program: AssemblyProgram,
 }
@@ -6,6 +8,7 @@ pub enum AssemblyProgram {
    Function {
       name: String,
       instructions: Vec<Instruction>,
+      stack_allocator: StackAllocator
    },
 }
 

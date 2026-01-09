@@ -12,7 +12,7 @@ pub fn emit_code(assembly_ast: &AssemblyAST, output: &Path) -> Result<()> {
 
 fn write_program(program: &AssemblyProgram, output: &mut File) -> Result<()> {
    match program {
-      AssemblyProgram::Function { name, instructions } => {
+      AssemblyProgram::Function { name, instructions, .. } => {
          write_function(name, instructions, output)?;
       }
    }
