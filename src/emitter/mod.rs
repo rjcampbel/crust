@@ -40,7 +40,9 @@ fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()>
             }
          };
          let dest = match dest {
-            Operand::Register => "%eax".to_string(),
+            Operand::Register(_) => {
+               "%eax".to_string()
+            },
             _ => {
                bail!("Unsupported destination operand for mov instruction")
             }
@@ -49,6 +51,9 @@ fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()>
       }
       Instruction::Return => {
          writeln!(output, "\tret")?;
+      },
+      _ => {
+         bail!("Unsupported instruction")
       }
    }
    Ok(())

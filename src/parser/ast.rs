@@ -14,7 +14,7 @@ pub enum Stmt {
 }
 
 pub enum Expr {
-   Integer(u64),
+   Integer(i64),
    UnaryOp {
       operator: UnaryOp,
       expr: Box<Expr>,

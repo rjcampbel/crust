@@ -136,7 +136,7 @@ impl<'a> Lexer<'a> {
       }
 
       let token_string = self.lexeme();
-      self.add_token(TokenType::Integer(token_string.parse::<u64>()?));
+      self.add_token(TokenType::Integer(token_string.parse::<i64>()?));
 
       Ok(())
    }

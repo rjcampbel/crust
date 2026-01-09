@@ -11,7 +11,8 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
                }
                Instruction::Return => {
                   println!("  RETURN");
-               }
+               },
+               _ => {}
             }
          }
       }

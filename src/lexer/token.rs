@@ -18,7 +18,7 @@ pub enum TokenType {
     Return,
 
     // Constands/Identifiers
-    Integer(u64),
+    Integer(i64),
     Identifier,
     EOF,
 }

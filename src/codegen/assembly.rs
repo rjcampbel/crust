@@ -9,13 +9,30 @@ pub enum AssemblyProgram {
    },
 }
 
+#[derive(Clone)]
 pub enum Instruction {
    Mov(Operand, Operand),
+   Unary(UnaryOp, Operand),
+   AllocateStack(usize),
    Return
 }
 
-#[derive(Debug)]
+#[derive(Clone)]
+pub enum UnaryOp {
+   Neg,
+   Not,
+}
+
+#[derive(Debug,Clone)]
 pub enum Operand {
-   Immediate(u64),
-   Register,
+   Immediate(i64),
+   Register(Register),
+   Pseudo(String),
+   Stack(i64),
+}
+
+#[derive(Debug,Clone)]
+pub enum Register {
+   AX,
+   R10D,
 }

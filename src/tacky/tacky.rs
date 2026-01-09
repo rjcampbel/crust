@@ -20,7 +20,7 @@ pub enum Instr {
 
 #[derive(Clone, Debug)]
 pub enum Val {
-   Integer(u64),
+   Integer(i64),
    Var(String),
 }
 

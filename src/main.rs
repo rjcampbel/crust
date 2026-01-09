@@ -80,11 +80,12 @@ fn main() -> Result<()> {
     if args.codegen {
         let tokens = lex(&pp_source, args.print_tokens)?;
         let ast = parse(tokens, args.print_ast)?;
-        let _ = codegen(&ast, args.print_assembly)?;
+        let tacky = gen_tacky(&ast, args.print_tacky)?;
+        let _ = codegen(&tacky, args.print_assembly)?;
         return Ok(());
     }
 
-    build(&pp_source, args.print_tokens, args.print_ast, args.print_assembly)?;
+    build(&pp_source, args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
 
     Ok(())
 }
@@ -106,14 +107,15 @@ fn gen_tacky(ast: &AST, print_tacky: bool) -> Result<TackyAST> {
     tacky::gen_tacky(ast, print_tacky)
 }
 
-fn codegen(ast: &AST, print_assembly: bool) -> Result<AssemblyAST> {
-    codegen::codegen(ast, print_assembly)
+fn codegen(tacky: &TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
+    codegen::codegen(tacky, print_assembly)
 }
 
-fn build(source: &Path, print_tokens: bool, print_ast: bool, print_assembly: bool) -> Result<()> {
+fn build(source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<()> {
     let tokens = lex(&source, print_tokens)?;
-    let program = parse(tokens, print_ast)?;
-    let assembly_ast = codegen(&program, print_assembly)?;
+    let ast = parse(tokens, print_ast)?;
+    let tacky = gen_tacky(&ast, print_tacky)?;
+    let assembly_ast = codegen(&tacky, print_assembly)?;
     let output = source.with_extension("s");
     emit_code(&assembly_ast, &output)?;
     assemble(&output, &source.with_extension(""))?;
