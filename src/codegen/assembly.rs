@@ -5,6 +5,12 @@ pub struct AssemblyAST {
    pub program: AssemblyProgram,
 }
 
+impl fmt::Display for AssemblyAST {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(f, "{}", self.program)
+   }
+}
+
 pub enum AssemblyProgram {
    Function {
       name: String,
@@ -13,12 +19,45 @@ pub enum AssemblyProgram {
    },
 }
 
+impl fmt::Display for AssemblyProgram {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         AssemblyProgram::Function { name, instructions, .. } => {
+            writeln!(f, "\t.globl _{}", name)?;
+            writeln!(f, "_{}:", name)?;
+            writeln!(f, "\tpushq\t%rbp")?;
+            writeln!(f, "\tmovq\t%rsp, %rbp")?;
+            for instr in instructions {
+               writeln!(f, "{}", instr)?;
+            }
+            Ok(())
+         }
+      }
+   }
+}
+
 #[derive(Clone)]
 pub enum Instruction {
    Mov(Operand, Operand),
    Unary(UnaryOp, Operand),
    AllocateStack(i64),
    Return
+}
+
+impl fmt::Display for Instruction {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         Instruction::Mov(src, dest) => write!(f, "\tmovl {}, {}", src, dest),
+         Instruction::Unary(op, operand) => write!(f, "\t{} {}", op, operand),
+         Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
+         Instruction::Return => {
+            writeln!(f, "\tmovq\t%rbp, %rsp")?;
+            writeln!(f, "\tpopq\t%rbp")?;
+            writeln!(f, "\tret")?;
+            fmt::Result::Ok(())
+         }
+      }
+   }
 }
 
 #[derive(Clone)]
@@ -42,6 +81,17 @@ pub enum Operand {
    Register(Register),
    Pseudo(String),
    Stack(i64),
+}
+
+impl fmt::Display for Operand {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         Operand::Immediate(value) => write!(f, "${}", value),
+         Operand::Register(r) => write!(f, "{}", r),
+         Operand::Pseudo(name) => write!(f, "{}", name),
+         Operand::Stack(i) => write!(f, "{}(%rbp)", i),
+      }
+   }
 }
 
 #[derive(Debug,Clone)]
