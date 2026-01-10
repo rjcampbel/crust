@@ -20,7 +20,6 @@ pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
    Ok(lexer.tokens)
 }
 
-
 struct Lexer<'a> {
    source: &'a Vec<char>,
    tokens: Vec<Token>,

@@ -33,37 +33,8 @@ fn write_function(name: &String, instructions: &Vec<Instruction>, output: &mut F
 fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()> {
    match instruction {
       Instruction::Mov(src, dest) => {
-         let src = match src {
-            Operand::Immediate(value) => {
-               format!("${}", value)
-            },
-            Operand::Register(Register::AX) => {
-               "%eax".to_string()
-            },
-            Operand::Register(Register::R10D) => {
-               "%r10d".to_string()
-            },
-            Operand::Stack(i) => {
-               format!("{}(%rbp)", i)
-            },
-            _ => {
-               bail!("Unsupported source operand for mov instruction")
-            }
-         };
-         let dest = match dest {
-            Operand::Register(Register::AX) => {
-               "%eax".to_string()
-            },
-            Operand::Register(Register::R10D) => {
-               "%r10d".to_string()
-            },
-            Operand::Stack(i) => {
-               format!("{}(%rbp)", i)
-            },
-             _ => {
-               bail!("Unsupported destination operand for mov instruction")
-            }
-         };
+         let src = translate_operand(src, output)?;
+         let dest = translate_operand(dest, output)?;
          writeln!(output, "\tmovl\t{}, {}", src, dest)?;
       }
       Instruction::Return => {
@@ -75,29 +46,26 @@ fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()>
          writeln!(output, "\tsubq\t${}, %rsp", i)?;
       },
       Instruction::Unary(op, operand) => {
-         let dest = match operand {
-            Operand::Register(Register::AX) => {
-               "%eax".to_string()
-            },
-            Operand::Register(Register::R10D) => {
-               "%r10d".to_string()
-            },
-            Operand::Stack(i) => {
-               format!("{}(%rbp)", i)
-            },
-             _ => {
-               bail!("Unsupported operand for unary instruction")
-            }
-         };
-         match op {
-            UnaryOp::Neg => {
-               writeln!(output, "\tnegl\t{}", dest)?;
-            },
-            UnaryOp::Not => {
-               writeln!(output, "\tnotl\t{}", dest)?;
-            }
-         }
+         let dest = translate_operand(operand, output)?;
+         writeln!(output, "\t{}\t{}", op, dest)?;
       }
    }
    Ok(())
+}
+
+fn translate_operand(operand: &Operand, output: &mut File) -> Result<String> {
+   match operand {
+      Operand::Immediate(value) => {
+         Ok(format!("${}", value))
+      },
+      Operand::Register(r) => {
+         Ok(format!("{}", r))
+      },
+      Operand::Stack(i) => {
+         Ok(format!("{}(%rbp)", i))
+      },
+      _ => {
+         bail!("Unsupported source operand for mov instruction")
+      }
+   }
 }
