@@ -16,7 +16,7 @@ pub enum AssemblyProgram {
 pub enum Instruction {
    Mov(Operand, Operand),
    Unary(UnaryOp, Operand),
-   AllocateStack(usize),
+   AllocateStack(i64),
    Return
 }
 

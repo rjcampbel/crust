@@ -26,6 +26,7 @@ fn generate_assembly(tacky: &TackyAST) -> Result<AssemblyAST> {
 
    if let Ok(ref mut ass) = assembly {
       replace_pseudoregisters(ass);
+      fixup_instructions(ass);
    }
    assembly
 }
@@ -117,6 +118,33 @@ fn replace_pseudoregisters(assembly: &mut AssemblyAST) {
                },
                _ => {}
             }
+         }
+      }
+   }
+}
+
+fn fixup_instructions(assembly: &mut AssemblyAST) {
+   match &mut assembly.program {
+      AssemblyProgram::Function { instructions, stack_allocator , .. } => {
+         let stack_size = stack_allocator.get();
+         instructions.insert(0, Instruction::AllocateStack(stack_size));
+
+         let mut insertions = Vec::new();
+         for (index, instr) in instructions.iter_mut().enumerate(){
+            match instr {
+               Instruction::Mov(Operand::Stack(src), Operand::Stack(dst)) => {
+                  let src_val = *src;
+                  let dst_val = *dst;
+                  *instr = Instruction::Mov(Operand::Stack(src_val), Operand::Register(Register::R10D));
+                  let new_instr = Instruction::Mov(Operand::Register(Register::R10D), Operand::Stack(dst_val));
+                  insertions.push((index + 1, new_instr));
+               },
+               _ => {}
+            }
+         }
+
+         for (index, new_instr) in insertions.into_iter().rev() {
+            instructions.insert(index, new_instr);
          }
       }
    }

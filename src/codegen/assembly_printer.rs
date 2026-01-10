@@ -21,8 +21,10 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
                         println!("  NOT {:?}", operand);
                      }
                   }
+               },
+               Instruction::AllocateStack(size) => {
+                  println!("  ALLOCATE STACK {}", size);
                }
-               _ => {}
             }
          }
       }
