@@ -3,3 +3,5 @@
 Cargo.lock
 *.i
 launch.json
+*.s
+./src/test/*.i

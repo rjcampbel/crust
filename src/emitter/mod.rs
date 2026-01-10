@@ -22,6 +22,8 @@ fn write_program(program: &AssemblyProgram, output: &mut File) -> Result<()> {
 fn write_function(name: &String, instructions: &Vec<Instruction>, output: &mut File) -> Result<()> {
    writeln!(output, "\t.globl _{}", name)?;
    writeln!(output, "_{}:", name)?;
+   writeln!(output, "\tpushq\t%rbp")?;
+   writeln!(output, "\tmovq\t%rsp, %rbp")?;
    for instr in instructions {
       write_instruction(&instr, output)?;
    }
@@ -34,26 +36,67 @@ fn write_instruction(instruction: &Instruction, output: &mut File) -> Result<()>
          let src = match src {
             Operand::Immediate(value) => {
                format!("${}", value)
-            }
+            },
+            Operand::Register(Register::AX) => {
+               "%eax".to_string()
+            },
+            Operand::Register(Register::R10D) => {
+               "%r10d".to_string()
+            },
+            Operand::Stack(i) => {
+               format!("{}(%rbp)", i)
+            },
             _ => {
                bail!("Unsupported source operand for mov instruction")
             }
          };
          let dest = match dest {
-            Operand::Register(_) => {
+            Operand::Register(Register::AX) => {
                "%eax".to_string()
             },
-            _ => {
+            Operand::Register(Register::R10D) => {
+               "%r10d".to_string()
+            },
+            Operand::Stack(i) => {
+               format!("{}(%rbp)", i)
+            },
+             _ => {
                bail!("Unsupported destination operand for mov instruction")
             }
          };
          writeln!(output, "\tmovl\t{}, {}", src, dest)?;
       }
       Instruction::Return => {
+         writeln!(output, "\tmovq\t%rbp, %rsp")?;
+         writeln!(output, "\tpopq\t%rbp")?;
          writeln!(output, "\tret")?;
       },
-      _ => {
-         bail!("Unsupported instruction")
+      Instruction::AllocateStack(i) => {
+         writeln!(output, "\tsubq\t${}, %rsp", i)?;
+      },
+      Instruction::Unary(op, operand) => {
+         let dest = match operand {
+            Operand::Register(Register::AX) => {
+               "%eax".to_string()
+            },
+            Operand::Register(Register::R10D) => {
+               "%r10d".to_string()
+            },
+            Operand::Stack(i) => {
+               format!("{}(%rbp)", i)
+            },
+             _ => {
+               bail!("Unsupported operand for unary instruction")
+            }
+         };
+         match op {
+            UnaryOp::Neg => {
+               writeln!(output, "\tnegl\t{}", dest)?;
+            },
+            UnaryOp::Not => {
+               writeln!(output, "\tnotl\t{}", dest)?;
+            }
+         }
       }
    }
    Ok(())
