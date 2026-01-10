@@ -92,7 +92,7 @@ impl<'a> Lexer<'a> {
          '\n'=> self.line += 1,
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,
-         _ if c.is_alphabetic() || c == '_' => self.identifier()?,
+         _ if is_alpha(c) => self.identifier()?,
          _ => bail!(error(self.line, String::from(c), ErrorType::InvalidToken))
       };
 
