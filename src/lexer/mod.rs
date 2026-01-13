@@ -80,6 +80,10 @@ impl<'a> Lexer<'a> {
          '}' => self.add_token(TokenType::CloseBrace),
          ';' => self.add_token(TokenType::Semicolon),
          '~' => self.add_token(TokenType::Tilde),
+         '+' => self.add_token(TokenType::Plus),
+         '*' => self.add_token(TokenType::Star),
+         '/' => self.add_token(TokenType::Slash),
+         '%' => self.add_token(TokenType::Percent),
          '-' => {
             if !self.at_end() && self.peek() == '-' {
                self.advance();

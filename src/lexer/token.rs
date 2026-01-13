@@ -11,6 +11,10 @@ pub enum TokenType {
     Tilde,
     Dash,
     DoubleDash,
+    Plus,
+    Star,
+    Slash,
+    Percent,
 
     // Keywords
     Int,
@@ -51,6 +55,10 @@ impl fmt::Display for TokenType {
          TokenType::Tilde => write!(f, "~"),
          TokenType::Dash => write!(f, "-"),
          TokenType::DoubleDash => write!(f, "--"),
+         TokenType::Plus => write!(f, "+"),
+         TokenType::Star => write!(f, "*"),
+         TokenType::Slash => write!(f, "/"),
+         TokenType::Percent => write!(f, "%"),
          TokenType::Int => write!(f, "int"),
          TokenType::Void => write!(f, "void"),
          TokenType::Return => write!(f, "return"),
