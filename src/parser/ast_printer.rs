@@ -32,5 +32,26 @@ fn print_expr(expr: &Expr, indent: usize) {
          }
          print_expr(expr, indent + 2);
       },
+      Expr::BinaryOp { operator, left, right } => {
+         match operator {
+            BinaryOp::Add => {
+               println!("{}BinaryOp: Add", indentation);
+            },
+            BinaryOp::Subtract => {
+               println!("{}BinaryOp: Subtract", indentation);
+            },
+            BinaryOp::Multiply => {
+               println!("{}BinaryOp: Multiply", indentation);
+            },
+            BinaryOp::Divide => {
+               println!("{}BinaryOp: Divide", indentation);
+            },
+            BinaryOp::Modulus => {
+               println!("{}BinaryOp: Modulus", indentation);
+            },
+         }
+         print_expr(left, indent + 2);
+         print_expr(right, indent + 2);
+      }
    }
 }

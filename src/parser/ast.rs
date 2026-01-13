@@ -19,9 +19,22 @@ pub enum Expr {
       operator: UnaryOp,
       expr: Box<Expr>,
    },
+   BinaryOp {
+      operator: BinaryOp,
+      left: Box<Expr>,
+      right: Box<Expr>,
+   }
 }
 
 pub enum UnaryOp {
    Complement,
    Negate,
+}
+
+pub enum BinaryOp {
+   Add,
+   Subtract,
+   Multiply,
+   Divide,
+   Modulus,
 }

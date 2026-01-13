@@ -5,6 +5,7 @@ use crate::parser::ast::{AST, Program, Stmt, Expr};
 use crate::parser::ast;
 use tacky::*;
 use anyhow::Result;
+use anyhow::bail;
 use std::sync::atomic::{Ordering, AtomicUsize};
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -66,6 +67,9 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 dest: dest.clone(),
             });
             Ok(dest)
+        },
+        _ => {
+            bail!("Binary operations not yet implemented")
         }
     }
 }
