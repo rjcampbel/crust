@@ -13,6 +13,7 @@ pub enum Stmt {
    Return(Expr)
 }
 
+#[derive(Clone)]
 pub enum Expr {
    Integer(i64),
    UnaryOp {
@@ -26,11 +27,13 @@ pub enum Expr {
    }
 }
 
+#[derive(Clone)]
 pub enum UnaryOp {
    Complement,
    Negate,
 }
 
+#[derive(Clone)]
 pub enum BinaryOp {
    Add,
    Subtract,

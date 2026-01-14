@@ -3,5 +3,5 @@
 int main(void)
 {
    // So is this
-   return ~(-(~(-(~2))));
+   return 2+(3-2);
 }

@@ -91,31 +91,46 @@ impl Parser {
    }
 
    fn expression(&mut self) -> Result<Expr> {
-      let expr = self.unary()?;
-      Ok(expr)
+      let mut left: Expr = self.factor()?;
+      while self.match_token(TokenType::Plus) || self.match_token(TokenType::Dash) {
+         let operator_type = self.previous().token_type.clone();
+         let right = self.factor()?;
+         let new_left = Expr::BinaryOp {
+            operator: match operator_type {
+               TokenType::Plus => BinaryOp::Add,
+               TokenType::Dash => BinaryOp::Subtract,
+               _ => unreachable!()
+            },
+            left: Box::new(left.clone()),
+            right: Box::new(right)
+         };
+         left = new_left;
+      }
+      Ok(left)
    }
 
    fn unary(&mut self) -> Result<Expr> {
-      if self.match_token(TokenType::Dash) || self.match_token(TokenType::Tilde) {
-         let operator_type = self.previous().token_type.clone();
-         let expr = self.unary()?;
-         return Ok(Expr::UnaryOp {
-            operator: match operator_type {
-               TokenType::Dash => UnaryOp::Negate,
-               TokenType::Tilde => UnaryOp::Complement,
-               _ => unreachable!(),
-            },
-            expr: Box::new(expr),
-         });
-      }
-      self.primary()
+      let operator_type = self.previous().token_type.clone();
+      let expr = self.expression()?;
+      Ok(Expr::UnaryOp {
+         operator: match operator_type {
+            TokenType::Dash => UnaryOp::Negate,
+            TokenType::Tilde => UnaryOp::Complement,
+            _ => unreachable!(),
+         },
+         expr: Box::new(expr),
+      })
    }
 
-   fn primary(&mut self) -> Result<Expr> {
+   fn factor(&mut self) -> Result<Expr> {
       match self.peek().token_type {
          TokenType::Integer(i) => {
             self.advance();
             Ok(Expr::Integer(i))
+         },
+         TokenType::Tilde | TokenType::Dash => {
+            self.advance();
+            self.unary()
          },
          TokenType::OpenParen => {
             self.advance();
