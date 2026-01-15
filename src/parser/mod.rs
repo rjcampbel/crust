@@ -5,6 +5,56 @@ use anyhow::{bail, ensure, Result};
 use crate::lexer::token::{Token, TokenType};
 use ast::*;
 use thiserror::Error;
+use num::traits::FromPrimitive;
+
+#[derive(PartialEq, PartialOrd, Clone, Copy)]
+enum Precedence {
+   None,
+   Term,
+   Factor,
+}
+
+impl Precedence {
+   fn next(&self) -> Precedence {
+      match FromPrimitive::from_u8(*self as u8 + 1) {
+         Some(p) => p,
+         _ => Precedence::Factor,
+      }
+   }
+}
+
+impl FromPrimitive for Precedence {
+   fn from_i64(n: i64) -> Option<Self> {
+      match n {
+         0 => Some(Precedence::None),
+         1 => Some(Precedence::Term),
+         2 => Some(Precedence::Factor),
+         _ => None,
+      }
+   }
+
+   fn from_u64(n: u64) -> Option<Self> {
+      match n {
+         0 => Some(Precedence::None),
+         1 => Some(Precedence::Term),
+         2 => Some(Precedence::Factor),
+         _ => None,
+      }
+   }
+}
+
+impl TokenType {
+   fn precedence(&self) -> Precedence {
+      match self {
+         TokenType::Plus => Precedence::Term,
+         TokenType::Dash => Precedence::Term,
+         TokenType::Star => Precedence::Factor,
+         TokenType::Slash => Precedence::Factor,
+         TokenType::Percent => Precedence::Factor,
+         _ => Precedence::None,
+      }
+   }
+}
 
 #[derive(Error, Debug)]
 enum ParseError {
@@ -33,6 +83,7 @@ pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
    }
    Ok(ast)
 }
+
 
 struct Parser {
    tokens: Vec<Token>,
@@ -85,33 +136,37 @@ impl Parser {
 
    fn statement(&mut self) -> Result<Stmt> {
       self.consume(TokenType::Return)?;
-      let expr = self.expression()?;
+      let expr = self.expression(Precedence::None)?;
       self.consume(TokenType::Semicolon)?;
       Ok(Stmt::Return(expr))
    }
 
-   fn expression(&mut self) -> Result<Expr> {
+   fn expression(&mut self, min_prec: Precedence) -> Result<Expr> {
       let mut left: Expr = self.factor()?;
-      while self.match_token(TokenType::Plus) || self.match_token(TokenType::Dash) {
+
+      while self.peek().token_type.precedence() >= min_prec && (self.match_token(TokenType::Plus) || self.match_token(TokenType::Dash) || self.match_token(TokenType::Star) || self.match_token(TokenType::Slash) || self.match_token(TokenType::Percent)) {
          let operator_type = self.previous().token_type.clone();
-         let right = self.factor()?;
-         let new_left = Expr::BinaryOp {
+         let next_prec = operator_type.precedence().next();
+         let right = self.expression(next_prec)?;
+         left = Expr::BinaryOp {
             operator: match operator_type {
                TokenType::Plus => BinaryOp::Add,
                TokenType::Dash => BinaryOp::Subtract,
-               _ => unreachable!()
+               TokenType::Star => BinaryOp::Multiply,
+               TokenType::Slash => BinaryOp::Divide,
+               TokenType::Percent => BinaryOp::Modulus,
+               _ => unreachable!(),
             },
             left: Box::new(left.clone()),
             right: Box::new(right)
          };
-         left = new_left;
       }
       Ok(left)
    }
 
    fn unary(&mut self) -> Result<Expr> {
       let operator_type = self.previous().token_type.clone();
-      let expr = self.expression()?;
+      let expr = self.expression(operator_type.precedence())?;
       Ok(Expr::UnaryOp {
          operator: match operator_type {
             TokenType::Dash => UnaryOp::Negate,
@@ -133,8 +188,9 @@ impl Parser {
             self.unary()
          },
          TokenType::OpenParen => {
+            let precedence = self.peek().token_type.precedence();
             self.advance();
-            let expr = self.expression()?;
+            let expr = self.expression(precedence)?;
             self.consume(TokenType::CloseParen)?;
             Ok(expr)
          },
