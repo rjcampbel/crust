@@ -144,8 +144,8 @@ impl Parser {
    fn expression(&mut self, min_prec: Precedence) -> Result<Expr> {
       let mut left: Expr = self.factor()?;
 
-      while self.peek().token_type.precedence() >= min_prec && (self.match_token(TokenType::Plus) || self.match_token(TokenType::Dash) || self.match_token(TokenType::Star) || self.match_token(TokenType::Slash) || self.match_token(TokenType::Percent)) {
-         let operator_type = self.previous().token_type.clone();
+      while self.peek().token_type.precedence() >= min_prec && self.binary_op() {
+         let operator_type = self.advance().token_type.clone();
          let next_prec = operator_type.precedence().next();
          let right = self.expression(next_prec)?;
          left = Expr::BinaryOp {
@@ -208,13 +208,13 @@ impl Parser {
       bail!(error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), ErrorType::SyntaxError))
    }
 
-   fn match_token(&mut self, token_type: TokenType) -> bool {
-      if self.check(&token_type) {
-         self.advance();
-         return true;
-      }
-      false
-   }
+   // fn match_token(&mut self, token_type: TokenType) -> bool {
+   //    if self.check(&token_type) {
+   //       self.advance();
+   //       return true;
+   //    }
+   //    false
+   // }
 
    fn previous(&mut self) -> &Token {
       &self.tokens[self.current - 1]
@@ -239,5 +239,12 @@ impl Parser {
 
    fn at_end(&mut self) -> bool {
       self.peek().token_type == TokenType::EOF
+   }
+
+   fn binary_op(&mut self) -> bool {
+      match self.peek().token_type {
+         TokenType::Plus | TokenType::Dash | TokenType::Star | TokenType::Slash | TokenType::Percent => true,
+         _ => false,
+      }
    }
 }
