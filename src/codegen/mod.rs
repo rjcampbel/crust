@@ -3,7 +3,7 @@ mod assembly_printer;
 mod stack_allocator;
 
 use crate::tacky::{self, tacky::*};
-use anyhow::Result;
+use anyhow::{bail,Result};
 use assembly::*;
 use assembly_printer::print_assembly_ast;
 use stack_allocator::StackAllocator;
@@ -83,6 +83,9 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
             };
             instructions.push(Instruction::Mov(src, dst.clone()));
             instructions.push(Instruction::Unary(op, dst));
+         },
+         _ => {
+            bail!("Unsupported instruction in codegen");
          }
       }
    }

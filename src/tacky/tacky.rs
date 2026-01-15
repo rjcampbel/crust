@@ -16,6 +16,12 @@ pub enum Instr {
       src: Val,
       dest: Val,
    },
+   Binary {
+      operator: BinaryOp,
+      left: Val,
+      right: Val,
+      dest: Val,
+   },
 }
 
 #[derive(Clone, Debug)]
@@ -28,4 +34,13 @@ pub enum Val {
 pub enum UnaryOp {
    Negate,
    Complement,
+}
+
+#[derive(Debug)]
+pub enum BinaryOp {
+   Add,
+   Subtract,
+   Multiply,
+   Divide,
+   Modulus,
 }

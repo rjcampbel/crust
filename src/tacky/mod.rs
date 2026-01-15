@@ -5,7 +5,6 @@ use crate::parser::ast::{AST, Program, Stmt, Expr};
 use crate::parser::ast;
 use tacky::*;
 use anyhow::Result;
-use anyhow::bail;
 use std::sync::atomic::{Ordering, AtomicUsize};
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -68,8 +67,25 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             });
             Ok(dest)
         },
-        _ => {
-            bail!("Binary operations not yet implemented")
+        Expr::BinaryOp { operator, left, right } => {
+            let left = gen_expr_instrs(left, instrs)?;
+            let right = gen_expr_instrs(right, instrs)?;
+            let counter = COUNTER.fetch_add(1, Ordering::SeqCst);
+            let dest = Val::Var(format!("tmp.{}", counter));
+            let binary_op = match operator {
+                ast::BinaryOp::Add => BinaryOp::Add,
+                ast::BinaryOp::Subtract => BinaryOp::Subtract,
+                ast::BinaryOp::Multiply => BinaryOp::Multiply,
+                ast::BinaryOp::Divide => BinaryOp::Divide,
+                ast::BinaryOp::Modulus => BinaryOp::Modulus,
+            };
+            instrs.push(Instr::Binary {
+                operator: binary_op,
+                left,
+                right,
+                dest: dest.clone(),
+            });
+            Ok(dest)
         }
     }
 }

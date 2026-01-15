@@ -15,6 +15,9 @@ pub fn print_tacky_ast(tacky_ast: &TackyAST) {
                },
                Instr::Unary { operator, src, dest } => {
                   println!("  {:?} {:?} -> {:?}", operator, src, dest);
+               },
+               Instr::Binary { operator, left, right, dest } => {
+                  println!("  {:?} {:?}, {:?} -> {:?}", operator, left, right, dest);
                }
             }
          }
