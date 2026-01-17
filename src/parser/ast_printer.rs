@@ -49,6 +49,21 @@ fn print_expr(expr: &Expr, indent: usize) {
             BinaryOp::Modulus => {
                println!("{}BinaryOp: Modulus", indentation);
             },
+            BinaryOp::BitwiseOr => {
+               println!("{}BinaryOp: BitwiseOr", indentation);
+            },
+            BinaryOp::BitwiseAnd => {
+               println!("{}BinaryOp: BitwiseAnd", indentation);
+            },
+            BinaryOp::BitwiseXor => {
+               println!("{}BinaryOp: BitwiseXor", indentation);
+            },
+            BinaryOp::LeftShift => {
+               println!("{}BinaryOp: LeftShift", indentation);
+            },
+            BinaryOp::RightShift => {
+               println!("{}BinaryOp: RightShift", indentation);
+            },
          }
          print_expr(left, indent + 2);
          print_expr(right, indent + 2);
