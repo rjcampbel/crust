@@ -92,6 +92,39 @@ impl<'a> Lexer<'a> {
                self.add_token(TokenType::Dash);
             }
          },
+         '&' => {
+            if !self.at_end() && self.peek() == '&' {
+               self.advance();
+               self.add_token(TokenType::DoubleAmpersand);
+            } else {
+               self.add_token(TokenType::Ampersand);
+            }
+         },
+         '|' => {
+            if !self.at_end() && self.peek() == '|' {
+               self.advance();
+               self.add_token(TokenType::DoublePipe);
+            } else {
+               self.add_token(TokenType::Pipe);
+            }
+         },
+         '^' => self.add_token(TokenType::Caret),
+         '<' => {
+            if !self.at_end() && self.peek() == '<' {
+               self.advance();
+               self.add_token(TokenType::DoubleLessThan);
+            } else {
+               self.add_token(TokenType::LessThan);
+            }
+         },
+         '>' => {
+            if !self.at_end() && self.peek() == '>' {
+               self.advance();
+               self.add_token(TokenType::DoubleGreaterThan);
+            } else {
+               self.add_token(TokenType::GreaterThan);
+            }
+         },
          '\n'=> self.line += 1,
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,
