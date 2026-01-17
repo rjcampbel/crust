@@ -12,13 +12,14 @@ enum Precedence {
    None,
    Term,
    Factor,
+   Max,
 }
 
 impl Precedence {
-   fn next(&self) -> Precedence {
+   fn increment(&self) -> Precedence {
       match FromPrimitive::from_u8(*self as u8 + 1) {
          Some(p) => p,
-         _ => Precedence::Factor,
+         _ => Precedence::Max,
       }
    }
 }
@@ -29,7 +30,7 @@ impl FromPrimitive for Precedence {
          0 => Some(Precedence::None),
          1 => Some(Precedence::Term),
          2 => Some(Precedence::Factor),
-         _ => None,
+         _ => Some(Precedence::Max),
       }
    }
 
@@ -38,7 +39,7 @@ impl FromPrimitive for Precedence {
          0 => Some(Precedence::None),
          1 => Some(Precedence::Term),
          2 => Some(Precedence::Factor),
-         _ => None,
+         _ => Some(Precedence::Max),
       }
    }
 }
@@ -146,7 +147,7 @@ impl Parser {
 
       while self.peek().token_type.precedence() >= min_prec && self.binary_op() {
          let operator_type = self.advance().token_type.clone();
-         let next_prec = operator_type.precedence().next();
+         let next_prec = operator_type.precedence().increment();
          let right = self.expression(next_prec)?;
          left = Expr::BinaryOp {
             operator: match operator_type {
@@ -166,7 +167,7 @@ impl Parser {
 
    fn unary(&mut self) -> Result<Expr> {
       let operator_type = self.previous().token_type.clone();
-      let expr = self.expression(operator_type.precedence())?;
+      let expr = self.factor()?;
       Ok(Expr::UnaryOp {
          operator: match operator_type {
             TokenType::Dash => UnaryOp::Negate,
@@ -188,8 +189,8 @@ impl Parser {
             self.unary()
          },
          TokenType::OpenParen => {
-            let precedence = self.peek().token_type.precedence();
             self.advance();
+            let precedence = self.peek().token_type.precedence();
             let expr = self.expression(precedence)?;
             self.consume(TokenType::CloseParen)?;
             Ok(expr)
