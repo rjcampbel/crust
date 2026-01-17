@@ -40,4 +40,9 @@ pub enum BinaryOp {
    Multiply,
    Divide,
    Modulus,
+   BitwiseOr,
+   BitwiseAnd,
+   BitwiseXor,
+   LeftShift,
+   RightShift,
 }
