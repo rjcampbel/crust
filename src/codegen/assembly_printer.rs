@@ -22,6 +22,25 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
                      }
                   }
                },
+               Instruction::Binary(op, left, right) => {
+                  match op {
+                     BinaryOp::Add => {
+                        println!("  ADD {:?}, {:?}", left, right);
+                     },
+                     BinaryOp::Subt => {
+                        println!("  SUB {:?}, {:?}", left, right);
+                     },
+                     BinaryOp::Mult => {
+                        println!("  MUL {:?}, {:?}", left, right);
+                     }
+                  }
+               },
+               Instruction::Idiv(operand) => {
+                  println!("  IDIV {:?}", operand);
+               },
+               Instruction::Cdq => {
+                  println!("  CDQ");
+               },
                Instruction::AllocateStack(size) => {
                   println!("  ALLOCATE STACK {}", size);
                }

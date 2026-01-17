@@ -40,6 +40,9 @@ impl fmt::Display for AssemblyProgram {
 pub enum Instruction {
    Mov(Operand, Operand),
    Unary(UnaryOp, Operand),
+   Binary(BinaryOp, Operand, Operand),
+   Idiv(Operand),
+   Cdq,
    AllocateStack(i64),
    Return
 }
@@ -50,6 +53,9 @@ impl fmt::Display for Instruction {
          Instruction::Mov(src, dest) => write!(f, "\tmovl {}, {}", src, dest),
          Instruction::Unary(op, operand) => write!(f, "\t{} {}", op, operand),
          Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
+         Instruction::Binary(op, left, right) => write!(f, "\t{} {}, {}", op, left, right),
+         Instruction::Idiv(operand) => write!(f, "\tidivl {}", operand),
+         Instruction::Cdq => write!(f, "\tcdq"),
          Instruction::Return => {
             writeln!(f, "\tmovq\t%rbp, %rsp")?;
             writeln!(f, "\tpopq\t%rbp")?;
@@ -71,6 +77,24 @@ impl fmt::Display for UnaryOp {
       match self {
          UnaryOp::Neg => write!(f, "negl"),
          UnaryOp::Not => write!(f, "notl"),
+      }
+   }
+}
+
+
+#[derive(Clone)]
+pub enum BinaryOp {
+   Add,
+   Subt,
+   Mult,
+}
+
+impl fmt::Display for BinaryOp {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         BinaryOp::Add => write!(f, "addl"),
+         BinaryOp::Subt => write!(f, "subl"),
+         BinaryOp::Mult => write!(f, "imull"),
       }
    }
 }
@@ -97,14 +121,18 @@ impl fmt::Display for Operand {
 #[derive(Debug,Clone)]
 pub enum Register {
    AX,
-   R10D,
+   DX,
+   R10,
+   R11
 }
 
 impl fmt::Display for Register {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
          Register::AX => write!(f, "%eax"),
-         Register::R10D => write!(f, "%r10d"),
+         Register::DX => write!(f, "%edx"),
+         Register::R10 => write!(f, "%r10d"),
+         Register::R11 => write!(f, "%r11d"),
       }
    }
 }
