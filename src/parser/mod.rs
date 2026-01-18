@@ -10,6 +10,10 @@ use num::traits::FromPrimitive;
 #[derive(PartialEq, PartialOrd, Clone, Copy)]
 enum Precedence {
    None,
+   BitwiseOr,
+   BitwiseXor,
+   BitwiseAnd,
+   Shift,
    Term,
    Factor,
    Max,
@@ -47,11 +51,16 @@ impl FromPrimitive for Precedence {
 impl TokenType {
    fn precedence(&self) -> Precedence {
       match self {
-         TokenType::Plus => Precedence::Term,
-         TokenType::Dash => Precedence::Term,
          TokenType::Star => Precedence::Factor,
          TokenType::Slash => Precedence::Factor,
          TokenType::Percent => Precedence::Factor,
+         TokenType::Plus => Precedence::Term,
+         TokenType::Dash => Precedence::Term,
+         TokenType::DoubleLessThan => Precedence::Shift,
+         TokenType::DoubleGreaterThan => Precedence::Shift,
+         TokenType::Pipe => Precedence::BitwiseOr,
+         TokenType::Caret => Precedence::BitwiseXor,
+         TokenType::Ampersand => Precedence::BitwiseAnd,
          _ => Precedence::None,
       }
    }
