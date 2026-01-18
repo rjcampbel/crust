@@ -2,45 +2,50 @@ use std::fmt;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
-    // Symbols
-    OpenParen,
-    CloseParen,
-    OpenBrace,
-    CloseBrace,
-    Semicolon,
-    Tilde,
-    Dash,
-    DoubleDash,
-    Plus,
-    Star,
-    Slash,
-    Percent,
-    Ampersand,
-    DoubleAmpersand,
-    Pipe,
-    DoublePipe,
-    Caret,
-    LessThan,
-    DoubleLessThan,
-    GreaterThan,
-    DoubleGreaterThan,
+   // Symbols
+   OpenParen,
+   CloseParen,
+   OpenBrace,
+   CloseBrace,
+   Semicolon,
+   Tilde,
+   Dash,
+   DoubleDash,
+   Plus,
+   Star,
+   Slash,
+   Percent,
+   Ampersand,
+   DoubleAmpersand,
+   Pipe,
+   DoublePipe,
+   Caret,
+   Less,
+   LessOrEqual,
+   DoubleLess,
+   Greater,
+   GreaterOrEqual,
+   DoubleGreater,
+   Bang,
+   DoubleEqual,
+   BangEqual,
 
-    // Keywords
-    Int,
-    Void,
-    Return,
+   // Keywords
+   Int,
+   Void,
+   Return,
 
-    // Constands/Identifiers
-    Integer(i64),
-    Identifier,
-    EOF,
+   // Constands/Identifiers
+   Integer(i64),
+   Identifier,
+   EOF,
 }
 
 #[derive(Debug)]
 pub struct Token {
-    pub token_type: TokenType,
-    pub lexeme: String,
-    pub line_number: usize
+   pub token_type: TokenType,
+   pub lexeme: String,
+   pub line_number: usize
 }
 
 impl Token {
@@ -73,10 +78,15 @@ impl fmt::Display for TokenType {
          TokenType::Pipe => write!(f, "|"),
          TokenType::DoublePipe => write!(f, "||"),
          TokenType::Caret => write!(f, "^"),
-         TokenType::LessThan => write!(f, "<"),
-         TokenType::DoubleLessThan => write!(f, "<<"),
-         TokenType::GreaterThan => write!(f, ">"),
-         TokenType::DoubleGreaterThan => write!(f, ">>"),
+         TokenType::Less => write!(f, "<"),
+         TokenType::LessOrEqual => write!(f, "<="),
+         TokenType::Greater => write!(f, ">"),
+         TokenType::GreaterOrEqual => write!(f, ">"),
+         TokenType::DoubleLess => write!(f, "<<"),
+         TokenType::DoubleGreater => write!(f, ">>"),
+         TokenType::Bang => write!(f, "!"),
+         TokenType::DoubleEqual => write!(f, "=="),
+         TokenType::BangEqual => write!(f, "!="),
          TokenType::Int => write!(f, "int"),
          TokenType::Void => write!(f, "void"),
          TokenType::Return => write!(f, "return"),

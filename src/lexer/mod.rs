@@ -80,10 +80,6 @@ impl<'a> Lexer<'a> {
          '}' => self.add_token(TokenType::CloseBrace),
          ';' => self.add_token(TokenType::Semicolon),
          '~' => self.add_token(TokenType::Tilde),
-         '+' => self.add_token(TokenType::Plus),
-         '*' => self.add_token(TokenType::Star),
-         '/' => self.add_token(TokenType::Slash),
-         '%' => self.add_token(TokenType::Percent),
          '-' => {
             if !self.at_end() && self.peek() == '-' {
                self.advance();
@@ -92,6 +88,10 @@ impl<'a> Lexer<'a> {
                self.add_token(TokenType::Dash);
             }
          },
+         '+' => self.add_token(TokenType::Plus),
+         '*' => self.add_token(TokenType::Star),
+         '/' => self.add_token(TokenType::Slash),
+         '%' => self.add_token(TokenType::Percent),
          '&' => {
             if !self.at_end() && self.peek() == '&' {
                self.advance();
@@ -112,19 +112,39 @@ impl<'a> Lexer<'a> {
          '<' => {
             if !self.at_end() && self.peek() == '<' {
                self.advance();
-               self.add_token(TokenType::DoubleLessThan);
+               self.add_token(TokenType::DoubleLess);
+            } else if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::LessOrEqual);
             } else {
-               self.add_token(TokenType::LessThan);
+               self.add_token(TokenType::Less);
             }
          },
          '>' => {
             if !self.at_end() && self.peek() == '>' {
                self.advance();
-               self.add_token(TokenType::DoubleGreaterThan);
+               self.add_token(TokenType::DoubleGreater);
+            } else if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::GreaterOrEqual);
             } else {
-               self.add_token(TokenType::GreaterThan);
+               self.add_token(TokenType::Greater);
             }
          },
+         '!' => {
+            if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::BangEqual);
+            } else {
+               self.add_token(TokenType::Bang);
+            }
+         }
+         '=' => {
+            if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::DoubleEqual);
+            }
+         }
          '\n'=> self.line += 1,
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,

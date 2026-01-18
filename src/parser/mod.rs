@@ -64,8 +64,8 @@ impl TokenType {
          TokenType::Percent => Precedence::Factor,
          TokenType::Plus => Precedence::Term,
          TokenType::Dash => Precedence::Term,
-         TokenType::DoubleLessThan => Precedence::Shift,
-         TokenType::DoubleGreaterThan => Precedence::Shift,
+         TokenType::DoubleLess => Precedence::Shift,
+         TokenType::DoubleGreater => Precedence::Shift,
          TokenType::Pipe => Precedence::BitwiseOr,
          TokenType::Caret => Precedence::BitwiseXor,
          TokenType::Ampersand => Precedence::BitwiseAnd,
@@ -176,8 +176,8 @@ impl Parser {
                TokenType::Ampersand => BinaryOp::BitwiseAnd,
                TokenType::Pipe => BinaryOp::BitwiseOr,
                TokenType::Caret => BinaryOp::BitwiseXor,
-               TokenType::DoubleLessThan => BinaryOp::LeftShift,
-               TokenType::DoubleGreaterThan => BinaryOp::RightShift,
+               TokenType::DoubleLess => BinaryOp::LeftShift,
+               TokenType::DoubleGreater => BinaryOp::RightShift,
                _ => bail!("Unsupported operator")
             },
             left: Box::new(left.clone()),
@@ -274,8 +274,8 @@ impl Parser {
             TokenType::Ampersand |
             TokenType::Pipe |
             TokenType::Caret |
-            TokenType::DoubleLessThan |
-            TokenType::DoubleGreaterThan => true,
+            TokenType::DoubleLess |
+            TokenType::DoubleGreater => true,
          _ => false,
       }
    }
