@@ -33,24 +33,6 @@ impl Precedence {
    }
 }
 
-impl TokenType {
-   fn precedence(&self) -> Precedence {
-      match self {
-         TokenType::Star => Precedence::Factor,
-         TokenType::Slash => Precedence::Factor,
-         TokenType::Percent => Precedence::Factor,
-         TokenType::Plus => Precedence::Term,
-         TokenType::Dash => Precedence::Term,
-         TokenType::DoubleLess => Precedence::Shift,
-         TokenType::DoubleGreater => Precedence::Shift,
-         TokenType::Pipe => Precedence::BitwiseOr,
-         TokenType::Caret => Precedence::BitwiseXor,
-         TokenType::Ampersand => Precedence::BitwiseAnd,
-         _ => Precedence::None,
-      }
-   }
-}
-
 #[derive(Error, Debug)]
 enum ParseError {
    #[error("[line {}] Syntax Error: {}", line, msg)]
@@ -80,6 +62,22 @@ pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
 }
 
 impl TokenType {
+   fn precedence(&self) -> Precedence {
+      match self {
+         TokenType::Star => Precedence::Factor,
+         TokenType::Slash => Precedence::Factor,
+         TokenType::Percent => Precedence::Factor,
+         TokenType::Plus => Precedence::Term,
+         TokenType::Dash => Precedence::Term,
+         TokenType::DoubleLess => Precedence::Shift,
+         TokenType::DoubleGreater => Precedence::Shift,
+         TokenType::Pipe => Precedence::BitwiseOr,
+         TokenType::Caret => Precedence::BitwiseXor,
+         TokenType::Ampersand => Precedence::BitwiseAnd,
+         _ => Precedence::None,
+      }
+   }
+
    pub const BINARY_OPS: &[Self] = &[
       TokenType::Plus,
       TokenType::Dash,
@@ -120,7 +118,21 @@ impl TokenType {
          TokenType::LessOrEqual => Ok(BinaryOp::LessOrEqual),
          TokenType::Greater => Ok(BinaryOp::GreaterThan),
          TokenType::GreaterOrEqual => Ok(BinaryOp::GreaterOrEqual),
-         _ => bail!("Unsupported operator")
+         _ => unreachable!()
+      }
+   }
+
+   pub const UNARY_OPS: &[Self] = &[
+      TokenType::Dash,
+      TokenType::Tilde,
+      TokenType::Bang];
+
+   fn to_unary_op(self) -> Result<UnaryOp> {
+      match self {
+         TokenType::Dash => Ok(UnaryOp::Negate),
+         TokenType::Tilde => Ok(UnaryOp::Complement),
+         TokenType::Bang => Ok(UnaryOp::Not),
+         _ => unreachable!()
       }
    }
 }
@@ -200,38 +212,34 @@ impl Parser {
 
    fn unary(&mut self) -> Result<Expr> {
       let operator_type = self.previous().token_type.clone();
+      let unary_op = operator_type.to_unary_op()?;
       let expr = self.factor()?;
       Ok(Expr::UnaryOp {
-         operator: match operator_type {
-            TokenType::Dash => UnaryOp::Negate,
-            TokenType::Tilde => UnaryOp::Complement,
-            TokenType::Bang => UnaryOp::Not,
-            _ => unreachable!(),
-         },
+         operator: unary_op,
          expr: Box::new(expr),
       })
    }
 
    fn factor(&mut self) -> Result<Expr> {
-      match self.peek().token_type {
-         TokenType::Integer(i) => {
-            self.advance();
-            Ok(Expr::Integer(i))
-         },
-         TokenType::Tilde | TokenType::Dash | TokenType::Bang => {
-            self.advance();
-            self.unary()
-         },
-         TokenType::OpenParen => {
-            self.advance();
-            let precedence = self.peek().token_type.precedence();
-            let expr = self.expression(precedence)?;
-            self.consume(TokenType::CloseParen)?;
-            Ok(expr)
-         },
-         _ => {
-            let t = self.peek();
-            bail!(error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), ErrorType::SyntaxError))
+      if self.match_unary_op() {
+         return self.unary()
+      } else {
+         match self.peek().token_type {
+            TokenType::Integer(i) => {
+               self.advance();
+               Ok(Expr::Integer(i))
+            },
+            TokenType::OpenParen => {
+               self.advance();
+               let precedence = self.peek().token_type.precedence();
+               let expr = self.expression(precedence)?;
+               self.consume(TokenType::CloseParen)?;
+               Ok(expr)
+            },
+            _ => {
+               let t = self.peek();
+               bail!(error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), ErrorType::SyntaxError))
+            }
          }
       }
    }
@@ -281,6 +289,17 @@ impl Parser {
          return false;
       }
       if TokenType::BINARY_OPS.contains(&self.peek().token_type) {
+         self.advance();
+         return true;
+      }
+      false
+   }
+
+   fn match_unary_op(&mut self) -> bool {
+      if self.at_end() {
+         return false;
+      }
+      if TokenType::UNARY_OPS.contains(&self.peek().token_type) {
          self.advance();
          return true;
       }
