@@ -5,9 +5,11 @@ use anyhow::{bail, ensure, Result};
 use crate::lexer::token::{Token, TokenType};
 use ast::*;
 use thiserror::Error;
+
 use num::traits::FromPrimitive;
 
-#[derive(PartialEq, PartialOrd, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
+#[repr(u8)]
 enum Precedence {
    None,
    LogicalOr,
@@ -28,42 +30,6 @@ impl Precedence {
       match FromPrimitive::from_u8(*self as u8 + 1) {
          Some(p) => p,
          _ => Precedence::Max,
-      }
-   }
-}
-
-impl FromPrimitive for Precedence {
-   fn from_i64(n: i64) -> Option<Self> {
-      match n {
-         0 => Some(Precedence::None),
-         1 => Some(Precedence::LogicalOr),
-         2 => Some(Precedence::LogicalAnd),
-         3 => Some(Precedence::BitwiseOr),
-         4 => Some(Precedence::BitwiseXor),
-         5 => Some(Precedence::BitwiseAnd),
-         6 => Some(Precedence::Equality),
-         7 => Some(Precedence::Comparison),
-         8 => Some(Precedence::Shift),
-         9 => Some(Precedence::Term),
-         10 => Some(Precedence::Factor),
-         _ => Some(Precedence::Max),
-      }
-   }
-
-   fn from_u64(n: u64) -> Option<Self> {
-      match n {
-         0 => Some(Precedence::None),
-         1 => Some(Precedence::LogicalOr),
-         2 => Some(Precedence::LogicalAnd),
-         3 => Some(Precedence::BitwiseOr),
-         4 => Some(Precedence::BitwiseXor),
-         5 => Some(Precedence::BitwiseAnd),
-         6 => Some(Precedence::Equality),
-         7 => Some(Precedence::Comparison),
-         8 => Some(Precedence::Shift),
-         9 => Some(Precedence::Term),
-         10 => Some(Precedence::Factor),
-         _ => Some(Precedence::Max),
       }
    }
 }
@@ -113,7 +79,6 @@ pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
    }
    Ok(ast)
 }
-
 
 struct Parser {
    tokens: Vec<Token>,

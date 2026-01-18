@@ -14,6 +14,10 @@ use lexer::token::Token;
 use parser::ast::AST;
 use tacky::tacky::TackyAST;
 
+#[macro_use]
+extern crate num_derive;
+extern crate num_traits;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
