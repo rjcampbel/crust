@@ -8,7 +8,10 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
             match instr {
                Instruction::Mov(src, dest) => {
                   println!("  MOV {:?}, {:?}", src, dest);
-               }
+               },
+               Instruction::Movb(src, dest) => {
+                  println!("  MOVB {:?}, {:?}", src, dest);
+               },
                Instruction::Return => {
                   println!("  RETURN");
                },
@@ -27,13 +30,28 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
                      BinaryOp::Add => {
                         println!("  ADD {:?}, {:?}", left, right);
                      },
-                     BinaryOp::Subt => {
+                     BinaryOp::Sub => {
                         println!("  SUB {:?}, {:?}", left, right);
                      },
                      BinaryOp::Mult => {
                         println!("  MUL {:?}, {:?}", left, right);
-                     }
+                     },
+                     BinaryOp::BitwiseAnd => {
+                        println!("  BITAND {:?}, {:?}", left, right);
+                     },
+                     BinaryOp::BitwiseOr => {
+                        println!("  BITOR {:?}, {:?}", left, right);
+                     },
+                     BinaryOp::BitwiseXor => {
+                        println!("  XOR {:?}, {:?}", left, right);
+                     },
                   }
+               },
+               Instruction::Shl(src, dest) => {
+                  println!("  SHL {:?}, {:?}", src, dest);
+               },
+               Instruction::Shr(src, dest) => {
+                  println!("  SHR {:?}, {:?}", src, dest);
                },
                Instruction::Idiv(operand) => {
                   println!("  IDIV {:?}", operand);

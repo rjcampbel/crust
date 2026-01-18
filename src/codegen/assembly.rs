@@ -39,8 +39,11 @@ impl fmt::Display for AssemblyProgram {
 #[derive(Clone)]
 pub enum Instruction {
    Mov(Operand, Operand),
+   Movb(Operand, Operand),
    Unary(UnaryOp, Operand),
    Binary(BinaryOp, Operand, Operand),
+   Shl(Operand, Operand),
+   Shr(Operand, Operand),
    Idiv(Operand),
    Cdq,
    AllocateStack(i64),
@@ -51,6 +54,7 @@ impl fmt::Display for Instruction {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
          Instruction::Mov(src, dest) => write!(f, "\tmovl {}, {}", src, dest),
+         Instruction::Movb(src, dest) => write!(f, "\tmovb {}, {}", src, dest),
          Instruction::Unary(op, operand) => write!(f, "\t{} {}", op, operand),
          Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
          Instruction::Binary(op, left, right) => write!(f, "\t{} {}, {}", op, left, right),
@@ -62,6 +66,8 @@ impl fmt::Display for Instruction {
             writeln!(f, "\tret")?;
             fmt::Result::Ok(())
          }
+         Instruction::Shl(dst, count) => write!(f, "\tshll {}, {}", dst, count),
+         Instruction::Shr(dst, count) => write!(f, "\tsarl {}, {}", dst, count),
       }
    }
 }
@@ -85,16 +91,22 @@ impl fmt::Display for UnaryOp {
 #[derive(Clone)]
 pub enum BinaryOp {
    Add,
-   Subt,
+   Sub,
    Mult,
+   BitwiseAnd,
+   BitwiseOr,
+   BitwiseXor,
 }
 
 impl fmt::Display for BinaryOp {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
          BinaryOp::Add => write!(f, "addl"),
-         BinaryOp::Subt => write!(f, "subl"),
+         BinaryOp::Sub => write!(f, "subl"),
          BinaryOp::Mult => write!(f, "imull"),
+         BinaryOp::BitwiseAnd => write!(f, "andl"),
+         BinaryOp::BitwiseOr => write!(f, "orl"),
+         BinaryOp::BitwiseXor => write!(f, "xorl"),
       }
    }
 }
@@ -123,7 +135,8 @@ pub enum Register {
    AX,
    DX,
    R10,
-   R11
+   R11,
+   CL,
 }
 
 impl fmt::Display for Register {
@@ -133,6 +146,7 @@ impl fmt::Display for Register {
          Register::DX => write!(f, "%edx"),
          Register::R10 => write!(f, "%r10d"),
          Register::R11 => write!(f, "%r11d"),
+         Register::CL => write!(f, "%cl"),
       }
    }
 }

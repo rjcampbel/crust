@@ -4,7 +4,6 @@ mod stack_allocator;
 
 use crate::tacky::{self, tacky::*};
 use anyhow::Result;
-use anyhow::bail;
 use assembly::*;
 use assembly_printer::print_assembly_ast;
 use stack_allocator::StackAllocator;
@@ -76,7 +75,7 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
                },
                tacky::tacky::BinaryOp::Subtract => {
                   instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::Subt, right.clone(), dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, right.clone(), dst.clone()));
                },
                tacky::tacky::BinaryOp::Multiply => {
                   instructions.push(Instruction::Mov(left.clone(), dst.clone()));
@@ -94,7 +93,26 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
                   instructions.push(Instruction::Idiv(right));
                   instructions.push(Instruction::Mov(Operand::Register(Register::DX), dst));
                },
-               _ => bail!("Unsupported binary operation in codegen"),
+               &tacky::tacky::BinaryOp::BitwiseAnd => {
+                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseAnd, right.clone(), dst.clone()));
+               },
+               &tacky::tacky::BinaryOp::BitwiseOr => {
+                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseOr, right.clone(), dst.clone()));
+               },
+               &tacky::tacky::BinaryOp::BitwiseXor => {
+                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseXor, right.clone(), dst.clone()));
+               },
+               &tacky::tacky::BinaryOp::LeftShift => {
+                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
+                  instructions.push(Instruction::Shl(right.clone(), dst.clone()));
+               },
+               &tacky::tacky::BinaryOp::RightShift => {
+                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
+                  instructions.push(Instruction::Shr(right.clone(), dst.clone()));
+               },
             };
          }
       }
@@ -158,6 +176,34 @@ fn replace_pseudoregisters(assembly: &mut AssemblyAST) {
                      _ => {}
                   }
                },
+               Instruction::Shl(dest, count) => {
+                  match dest {
+                     Operand::Pseudo(s) => {
+                        *dest = Operand::Stack(stack_allocator.allocate(s.to_string(), 4));
+                     },
+                     _ => {}
+                  }
+                  match count {
+                     Operand::Pseudo(s) => {
+                        *count = Operand::Stack(stack_allocator.allocate(s.to_string(), 4));
+                     },
+                     _ => {}
+                  }
+               },
+               Instruction::Shr(dest, count) => {
+                  match dest {
+                     Operand::Pseudo(s) => {
+                        *dest = Operand::Stack(stack_allocator.allocate(s.to_string(), 4));
+                     },
+                     _ => {}
+                  }
+                  match count {
+                     Operand::Pseudo(s) => {
+                        *count = Operand::Stack(stack_allocator.allocate(s.to_string(), 4));
+                     },
+                     _ => {}
+                  }
+               },
                _ => {}
             }
          }
@@ -172,7 +218,7 @@ fn fixup_instructions(assembly: &mut AssemblyAST) {
          let mut new_instructions = Vec::new();
          new_instructions.push(Instruction::AllocateStack(stack_size));
 
-         for instr in instructions.iter_mut() {
+         for instr in instructions.iter() {
             match instr {
                Instruction::Mov(Operand::Stack(src), Operand::Stack(dst)) => {
                   let src_val = *src;
@@ -189,7 +235,7 @@ fn fixup_instructions(assembly: &mut AssemblyAST) {
                   let new_instr = Instruction::Idiv(Operand::Register(Register::R10));
                   new_instructions.push(new_instr);
                }
-               Instruction::Binary(op @ (assembly::BinaryOp::Add | assembly::BinaryOp::Subt), Operand::Stack(src), Operand::Stack(dst)) => {
+               Instruction::Binary(op @ (assembly::BinaryOp::Add | assembly::BinaryOp::Sub | assembly::BinaryOp::BitwiseAnd | assembly::BinaryOp::BitwiseOr | assembly::BinaryOp::BitwiseXor), Operand::Stack(src), Operand::Stack(dst)) => {
                   let src_val = *src;
                   let dst_val = *dst;
                   let op = op.clone();
@@ -202,7 +248,7 @@ fn fixup_instructions(assembly: &mut AssemblyAST) {
                   );
                   new_instructions.push(new_instr);
                },
-               &mut Instruction::Binary(assembly::BinaryOp::Mult, ref src @ _, ref dst @ Operand::Stack(_)) => {
+               Instruction::Binary(assembly::BinaryOp::Mult, src @ _, dst @ Operand::Stack(_)) => {
                   let instr1 = Instruction::Mov(dst.clone(), Operand::Register(Register::R11));
                   let instr2 = Instruction::Binary(
                      assembly::BinaryOp::Mult,
@@ -216,6 +262,14 @@ fn fixup_instructions(assembly: &mut AssemblyAST) {
                   new_instructions.push(instr1);
                   new_instructions.push(instr2);
                   new_instructions.push(instr3);
+               },
+               Instruction::Shl(count @ Operand::Stack(_), dest @ _) => {
+                  new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
+                  new_instructions.push(Instruction::Shl(Operand::Register(Register::CL), dest.clone()));
+               },
+               Instruction::Shr(count @ Operand::Stack(_), dest @ _) => {
+                  new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
+                  new_instructions.push(Instruction::Shr(Operand::Register(Register::CL), dest.clone()));
                },
                i @ _ => {
                   new_instructions.push(i.clone());
