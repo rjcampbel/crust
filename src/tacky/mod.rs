@@ -78,7 +78,11 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::BinaryOp::Multiply => BinaryOp::Multiply,
                 ast::BinaryOp::Divide => BinaryOp::Divide,
                 ast::BinaryOp::Modulus => BinaryOp::Modulus,
-                _ => unimplemented!(),
+                ast::BinaryOp::BitwiseAnd => BinaryOp::BitwiseAnd,
+                ast::BinaryOp::BitwiseOr => BinaryOp::BitwiseOr,
+                ast::BinaryOp::BitwiseXor => BinaryOp::BitwiseXor,
+                ast::BinaryOp::LeftShift => BinaryOp::LeftShift,
+                ast::BinaryOp::RightShift => BinaryOp::RightShift,
             };
             instrs.push(Instr::Binary {
                 operator: binary_op,

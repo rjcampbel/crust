@@ -4,6 +4,7 @@ mod stack_allocator;
 
 use crate::tacky::{self, tacky::*};
 use anyhow::Result;
+use anyhow::bail;
 use assembly::*;
 use assembly_printer::print_assembly_ast;
 use stack_allocator::StackAllocator;
@@ -93,6 +94,7 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
                   instructions.push(Instruction::Idiv(right));
                   instructions.push(Instruction::Mov(Operand::Register(Register::DX), dst));
                },
+               _ => bail!("Unsupported binary operation in codegen"),
             };
          }
       }
