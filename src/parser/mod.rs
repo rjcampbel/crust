@@ -5,7 +5,6 @@ use anyhow::{bail, ensure, Result};
 use crate::lexer::token::{Token, TokenType};
 use ast::*;
 use thiserror::Error;
-
 use num::traits::FromPrimitive;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
@@ -80,6 +79,52 @@ pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
    Ok(ast)
 }
 
+impl TokenType {
+   pub const BINARY_OPS: &[Self] = &[
+      TokenType::Plus,
+      TokenType::Dash,
+      TokenType::Star,
+      TokenType::Slash,
+      TokenType::Percent,
+      TokenType::Ampersand,
+      TokenType::Pipe,
+      TokenType::Caret,
+      TokenType::DoubleLess,
+      TokenType::DoubleGreater,
+      TokenType::DoubleAmpersand,
+      TokenType::DoublePipe,
+      TokenType::DoubleEqual,
+      TokenType::BangEqual,
+      TokenType::Less,
+      TokenType::LessOrEqual,
+      TokenType::Greater,
+      TokenType::GreaterOrEqual];
+
+   fn to_binary_op(self) -> Result<BinaryOp> {
+      match self {
+         TokenType::Plus => Ok(BinaryOp::Add),
+         TokenType::Dash => Ok(BinaryOp::Subtract),
+         TokenType::Star => Ok(BinaryOp::Multiply),
+         TokenType::Slash => Ok(BinaryOp::Divide),
+         TokenType::Percent => Ok(BinaryOp::Modulus),
+         TokenType::Ampersand => Ok(BinaryOp::BitwiseAnd),
+         TokenType::Pipe => Ok(BinaryOp::BitwiseOr),
+         TokenType::Caret => Ok(BinaryOp::BitwiseXor),
+         TokenType::DoubleLess => Ok(BinaryOp::LeftShift),
+         TokenType::DoubleGreater => Ok(BinaryOp::RightShift),
+         TokenType::DoubleAmpersand => Ok(BinaryOp::LogicalAnd),
+         TokenType::DoublePipe => Ok(BinaryOp::LogicalOr),
+         TokenType::DoubleEqual => Ok(BinaryOp::Equal),
+         TokenType::BangEqual => Ok(BinaryOp::NotEqual),
+         TokenType::Less => Ok(BinaryOp::LessThan),
+         TokenType::LessOrEqual => Ok(BinaryOp::LessOrEqual),
+         TokenType::Greater => Ok(BinaryOp::GreaterThan),
+         TokenType::GreaterOrEqual => Ok(BinaryOp::GreaterOrEqual),
+         _ => bail!("Unsupported operator")
+      }
+   }
+}
+
 struct Parser {
    tokens: Vec<Token>,
    current: usize,
@@ -139,32 +184,13 @@ impl Parser {
    fn expression(&mut self, min_prec: Precedence) -> Result<Expr> {
       let mut left: Expr = self.factor()?;
 
-      while self.peek().token_type.precedence() >= min_prec && self.binary_op() {
-         let operator_type = self.advance().token_type.clone();
+      while self.peek().token_type.precedence() >= min_prec && self.match_binary_op() {
+         let operator_type = self.previous().token_type.clone();
          let next_prec = operator_type.precedence().increment();
+         let binary_op = operator_type.to_binary_op()?;
          let right = self.expression(next_prec)?;
          left = Expr::BinaryOp {
-            operator: match operator_type {
-               TokenType::Plus => BinaryOp::Add,
-               TokenType::Dash => BinaryOp::Subtract,
-               TokenType::Star => BinaryOp::Multiply,
-               TokenType::Slash => BinaryOp::Divide,
-               TokenType::Percent => BinaryOp::Modulus,
-               TokenType::Ampersand => BinaryOp::BitwiseAnd,
-               TokenType::Pipe => BinaryOp::BitwiseOr,
-               TokenType::Caret => BinaryOp::BitwiseXor,
-               TokenType::DoubleLess => BinaryOp::LeftShift,
-               TokenType::DoubleGreater => BinaryOp::RightShift,
-               TokenType::DoubleAmpersand => BinaryOp::LogicalAnd,
-               TokenType::DoublePipe => BinaryOp::LogicalOr,
-               TokenType::DoubleEqual => BinaryOp::Equal,
-               TokenType::BangEqual => BinaryOp::NotEqual,
-               TokenType::Less => BinaryOp::LessThan,
-               TokenType::LessOrEqual => BinaryOp::LessOrEqual,
-               TokenType::Greater => BinaryOp::GreaterThan,
-               TokenType::GreaterOrEqual => BinaryOp::GreaterOrEqual,
-               _ => bail!("Unsupported operator")
-            },
+            operator: binary_op,
             left: Box::new(left.clone()),
             right: Box::new(right)
          };
@@ -250,28 +276,14 @@ impl Parser {
       self.peek().token_type == TokenType::EOF
    }
 
-   fn binary_op(&mut self) -> bool {
-      match self.peek().token_type {
-            TokenType::Plus |
-            TokenType::Dash |
-            TokenType::Star |
-            TokenType::Slash |
-            TokenType::Percent |
-            TokenType::Ampersand |
-            TokenType::Pipe |
-            TokenType::Caret |
-            TokenType::DoubleLess |
-            TokenType::DoubleGreater |
-            TokenType::DoubleAmpersand |
-            TokenType::DoublePipe |
-            TokenType::DoubleEqual |
-            TokenType::BangEqual |
-            TokenType::Less |
-            TokenType::LessOrEqual |
-            TokenType::Greater |
-            TokenType::GreaterOrEqual
-            => true,
-         _ => false,
+   fn match_binary_op(&mut self) -> bool {
+      if self.at_end() {
+         return false;
       }
+      if TokenType::BINARY_OPS.contains(&self.peek().token_type) {
+         self.advance();
+         return true;
+      }
+      false
    }
 }
