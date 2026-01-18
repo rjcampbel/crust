@@ -32,8 +32,12 @@ impl FromPrimitive for Precedence {
    fn from_i64(n: i64) -> Option<Self> {
       match n {
          0 => Some(Precedence::None),
-         1 => Some(Precedence::Term),
-         2 => Some(Precedence::Factor),
+         1 => Some(Precedence::BitwiseOr),
+         2 => Some(Precedence::BitwiseXor),
+         3 => Some(Precedence::BitwiseAnd),
+         4 => Some(Precedence::Shift),
+         5 => Some(Precedence::Term),
+         6 => Some(Precedence::Factor),
          _ => Some(Precedence::Max),
       }
    }
@@ -41,8 +45,12 @@ impl FromPrimitive for Precedence {
    fn from_u64(n: u64) -> Option<Self> {
       match n {
          0 => Some(Precedence::None),
-         1 => Some(Precedence::Term),
-         2 => Some(Precedence::Factor),
+         1 => Some(Precedence::BitwiseOr),
+         2 => Some(Precedence::BitwiseXor),
+         3 => Some(Precedence::BitwiseAnd),
+         4 => Some(Precedence::Shift),
+         5 => Some(Precedence::Term),
+         6 => Some(Precedence::Factor),
          _ => Some(Precedence::Max),
       }
    }
