@@ -29,6 +29,9 @@ fn print_expr(expr: &Expr, indent: usize) {
             UnaryOp::Negate => {
                println!("{}UnaryOp: Negate", indentation);
             },
+            UnaryOp::Not => {
+               println!("{}UnaryOp: Not", indentation);
+            }
          }
          print_expr(expr, indent + 2);
       },
@@ -63,6 +66,30 @@ fn print_expr(expr: &Expr, indent: usize) {
             },
             BinaryOp::RightShift => {
                println!("{}BinaryOp: RightShift", indentation);
+            },
+            BinaryOp::LogicalAnd => {
+               println!("{}BinaryOp: LogicalAnd", indentation);
+            },
+            BinaryOp::LogicalOr => {
+               println!("{}BinaryOp: LogicalOr", indentation);
+            },
+            BinaryOp::Equal => {
+               println!("{}BinaryOp: Equal", indentation);
+            },
+            BinaryOp::NotEqual => {
+               println!("{}BinaryOp: NotEqual", indentation);
+            },
+            BinaryOp::LessThan => {
+               println!("{}BinaryOp: LessThan", indentation);
+            },
+            BinaryOp::LessOrEqual => {
+               println!("{}BinaryOp: LessOrEqual", indentation);
+            },
+            BinaryOp::GreaterThan => {
+               println!("{}BinaryOp: GreaterThan", indentation);
+            },
+            BinaryOp::GreaterOrEqual => {
+               println!("{}BinaryOp: GreaterOrEqual", indentation);
             },
          }
          print_expr(left, indent + 2);

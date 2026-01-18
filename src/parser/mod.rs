@@ -10,9 +10,13 @@ use num::traits::FromPrimitive;
 #[derive(PartialEq, PartialOrd, Clone, Copy)]
 enum Precedence {
    None,
+   LogicalOr,
+   LogicalAnd,
    BitwiseOr,
    BitwiseXor,
    BitwiseAnd,
+   Equality,
+   Comparison,
    Shift,
    Term,
    Factor,
@@ -32,12 +36,16 @@ impl FromPrimitive for Precedence {
    fn from_i64(n: i64) -> Option<Self> {
       match n {
          0 => Some(Precedence::None),
-         1 => Some(Precedence::BitwiseOr),
-         2 => Some(Precedence::BitwiseXor),
-         3 => Some(Precedence::BitwiseAnd),
-         4 => Some(Precedence::Shift),
-         5 => Some(Precedence::Term),
-         6 => Some(Precedence::Factor),
+         1 => Some(Precedence::LogicalOr),
+         2 => Some(Precedence::LogicalAnd),
+         3 => Some(Precedence::BitwiseOr),
+         4 => Some(Precedence::BitwiseXor),
+         5 => Some(Precedence::BitwiseAnd),
+         6 => Some(Precedence::Equality),
+         7 => Some(Precedence::Comparison),
+         8 => Some(Precedence::Shift),
+         9 => Some(Precedence::Term),
+         10 => Some(Precedence::Factor),
          _ => Some(Precedence::Max),
       }
    }
@@ -45,12 +53,16 @@ impl FromPrimitive for Precedence {
    fn from_u64(n: u64) -> Option<Self> {
       match n {
          0 => Some(Precedence::None),
-         1 => Some(Precedence::BitwiseOr),
-         2 => Some(Precedence::BitwiseXor),
-         3 => Some(Precedence::BitwiseAnd),
-         4 => Some(Precedence::Shift),
-         5 => Some(Precedence::Term),
-         6 => Some(Precedence::Factor),
+         1 => Some(Precedence::LogicalOr),
+         2 => Some(Precedence::LogicalAnd),
+         3 => Some(Precedence::BitwiseOr),
+         4 => Some(Precedence::BitwiseXor),
+         5 => Some(Precedence::BitwiseAnd),
+         6 => Some(Precedence::Equality),
+         7 => Some(Precedence::Comparison),
+         8 => Some(Precedence::Shift),
+         9 => Some(Precedence::Term),
+         10 => Some(Precedence::Factor),
          _ => Some(Precedence::Max),
       }
    }
@@ -178,6 +190,14 @@ impl Parser {
                TokenType::Caret => BinaryOp::BitwiseXor,
                TokenType::DoubleLess => BinaryOp::LeftShift,
                TokenType::DoubleGreater => BinaryOp::RightShift,
+               TokenType::DoubleAmpersand => BinaryOp::LogicalAnd,
+               TokenType::DoublePipe => BinaryOp::LogicalOr,
+               TokenType::DoubleEqual => BinaryOp::Equal,
+               TokenType::BangEqual => BinaryOp::NotEqual,
+               TokenType::Less => BinaryOp::LessThan,
+               TokenType::LessOrEqual => BinaryOp::LessOrEqual,
+               TokenType::Greater => BinaryOp::GreaterThan,
+               TokenType::GreaterOrEqual => BinaryOp::GreaterOrEqual,
                _ => bail!("Unsupported operator")
             },
             left: Box::new(left.clone()),
@@ -194,6 +214,7 @@ impl Parser {
          operator: match operator_type {
             TokenType::Dash => UnaryOp::Negate,
             TokenType::Tilde => UnaryOp::Complement,
+            TokenType::Bang => UnaryOp::Not,
             _ => unreachable!(),
          },
          expr: Box::new(expr),
@@ -206,7 +227,7 @@ impl Parser {
             self.advance();
             Ok(Expr::Integer(i))
          },
-         TokenType::Tilde | TokenType::Dash => {
+         TokenType::Tilde | TokenType::Dash | TokenType::Bang => {
             self.advance();
             self.unary()
          },
@@ -266,7 +287,7 @@ impl Parser {
 
    fn binary_op(&mut self) -> bool {
       match self.peek().token_type {
-         TokenType::Plus |
+            TokenType::Plus |
             TokenType::Dash |
             TokenType::Star |
             TokenType::Slash |
@@ -275,7 +296,16 @@ impl Parser {
             TokenType::Pipe |
             TokenType::Caret |
             TokenType::DoubleLess |
-            TokenType::DoubleGreater => true,
+            TokenType::DoubleGreater |
+            TokenType::DoubleAmpersand |
+            TokenType::DoublePipe |
+            TokenType::DoubleEqual |
+            TokenType::BangEqual |
+            TokenType::Less |
+            TokenType::LessOrEqual |
+            TokenType::Greater |
+            TokenType::GreaterOrEqual
+            => true,
          _ => false,
       }
    }

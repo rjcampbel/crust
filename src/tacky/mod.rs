@@ -5,6 +5,7 @@ use crate::parser::ast::{AST, Program, Stmt, Expr};
 use crate::parser::ast;
 use tacky::*;
 use anyhow::Result;
+use anyhow::bail;
 use std::sync::atomic::{Ordering, AtomicUsize};
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -59,6 +60,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             let unary_op = match operator {
                 ast::UnaryOp::Negate => UnaryOp::Negate,
                 ast::UnaryOp::Complement => UnaryOp::Complement,
+                _ => bail!("unsupported unary op"),
             };
             instrs.push(Instr::Unary {
                 operator: unary_op,
@@ -83,6 +85,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::BinaryOp::BitwiseXor => BinaryOp::BitwiseXor,
                 ast::BinaryOp::LeftShift => BinaryOp::LeftShift,
                 ast::BinaryOp::RightShift => BinaryOp::RightShift,
+                _ => bail!("Unsupported binary op")
             };
             instrs.push(Instr::Binary {
                 operator: binary_op,
