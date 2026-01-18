@@ -78,6 +78,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::BinaryOp::Multiply => BinaryOp::Multiply,
                 ast::BinaryOp::Divide => BinaryOp::Divide,
                 ast::BinaryOp::Modulus => BinaryOp::Modulus,
+                _ => unimplemented!(),
             };
             instrs.push(Instr::Binary {
                 operator: binary_op,

@@ -165,7 +165,12 @@ impl Parser {
                TokenType::Star => BinaryOp::Multiply,
                TokenType::Slash => BinaryOp::Divide,
                TokenType::Percent => BinaryOp::Modulus,
-               _ => unreachable!(),
+               TokenType::Ampersand => BinaryOp::BitwiseAnd,
+               TokenType::Pipe => BinaryOp::BitwiseOr,
+               TokenType::Caret => BinaryOp::BitwiseXor,
+               TokenType::DoubleLessThan => BinaryOp::LeftShift,
+               TokenType::DoubleGreaterThan => BinaryOp::RightShift,
+               _ => bail!("Unsupported operator")
             },
             left: Box::new(left.clone()),
             right: Box::new(right)
@@ -253,7 +258,16 @@ impl Parser {
 
    fn binary_op(&mut self) -> bool {
       match self.peek().token_type {
-         TokenType::Plus | TokenType::Dash | TokenType::Star | TokenType::Slash | TokenType::Percent => true,
+         TokenType::Plus |
+            TokenType::Dash |
+            TokenType::Star |
+            TokenType::Slash |
+            TokenType::Percent |
+            TokenType::Ampersand |
+            TokenType::Pipe |
+            TokenType::Caret |
+            TokenType::DoubleLessThan |
+            TokenType::DoubleGreaterThan => true,
          _ => false,
       }
    }
