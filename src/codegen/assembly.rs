@@ -42,10 +42,15 @@ pub enum Instruction {
    Movb(Operand, Operand),
    Unary(UnaryOp, Operand),
    Binary(BinaryOp, Operand, Operand),
+   Cmp(Operand, Operand),
    Shl(Operand, Operand),
    Shr(Operand, Operand),
    Idiv(Operand),
    Cdq,
+   Jmp(String),
+   JmpCC(ConditionCode, String),
+   SetCC(ConditionCode, String),
+   Label(String),
    AllocateStack(i64),
    Return
 }
@@ -56,18 +61,23 @@ impl fmt::Display for Instruction {
          Instruction::Mov(src, dest) => write!(f, "\tmovl {}, {}", src, dest),
          Instruction::Movb(src, dest) => write!(f, "\tmovb {}, {}", src, dest),
          Instruction::Unary(op, operand) => write!(f, "\t{} {}", op, operand),
-         Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
          Instruction::Binary(op, left, right) => write!(f, "\t{} {}, {}", op, left, right),
-         Instruction::Idiv(operand) => write!(f, "\tidivl {}", operand),
+         Instruction::Shl(dst, count) => write!(f, "\tshll {}, {}", dst, count),
+         Instruction::Shr(dst, count) => write!(f, "\tsarl {}, {}", dst, count),
+         Instruction::Cmp(left, right) => write!(f, "\tcmpl {}, {}", left, right),
          Instruction::Cdq => write!(f, "\tcdq"),
+         Instruction::Jmp(label) => write!(f, "\tjmp {}", label),
+         Instruction::JmpCC(condition, label) => write!(f, "\tj{} {}", condition, label),
+         Instruction::SetCC(condition, label) => write!(f, "\tset{} {}", condition, label),
+         Instruction::Label(label) => write!(f, ".L{}", label),
+         Instruction::Idiv(operand) => write!(f, "\tidivl {}", operand),
+         Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
          Instruction::Return => {
             writeln!(f, "\tmovq\t%rbp, %rsp")?;
             writeln!(f, "\tpopq\t%rbp")?;
             writeln!(f, "\tret")?;
             fmt::Result::Ok(())
          }
-         Instruction::Shl(dst, count) => write!(f, "\tshll {}, {}", dst, count),
-         Instruction::Shr(dst, count) => write!(f, "\tsarl {}, {}", dst, count),
       }
    }
 }
@@ -126,6 +136,29 @@ impl fmt::Display for Operand {
          Operand::Register(r) => write!(f, "{}", r),
          Operand::Pseudo(name) => write!(f, "{}", name),
          Operand::Stack(i) => write!(f, "{}(%rbp)", i),
+      }
+   }
+}
+
+#[derive(Debug, Clone)]
+pub enum ConditionCode {
+   E,
+   NE,
+   G,
+   GE,
+   L,
+   LE
+}
+
+impl fmt::Display for ConditionCode {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         ConditionCode::E => write!(f, "e"),
+         ConditionCode::NE=> write!(f, "ne"),
+         ConditionCode::G => write!(f, "g"),
+         ConditionCode::GE => write!(f, "ge"),
+         ConditionCode::L => write!(f, "l"),
+         ConditionCode::LE => write!(f, "le")
       }
    }
 }

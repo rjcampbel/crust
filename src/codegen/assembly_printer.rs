@@ -47,6 +47,9 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
                      },
                   }
                },
+               Instruction::Cmp(left, right) => {
+                  println!("  CMP {:?}, {:?}", left, right);
+               }
                Instruction::Shl(src, dest) => {
                   println!("  SHL {:?}, {:?}", src, dest);
                },
@@ -59,6 +62,18 @@ pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
                Instruction::Cdq => {
                   println!("  CDQ");
                },
+               Instruction::Jmp(dest) => {
+                  println!("  JUMP {:?}", dest);
+               },
+               Instruction::JmpCC(code, dest, ) => {
+                  println!("  JUMPCC {:?}, {:?}", code, dest);
+               },
+               Instruction::SetCC(code, dest) => {
+                  println!("  SETCC {:?}, {:?}" , code, dest);
+               },
+               Instruction::Label(lbl) => {
+                  println!("  LBL {:?}", lbl);
+               }
                Instruction::AllocateStack(size) => {
                   println!("  ALLOCATE STACK {}", size);
                }
