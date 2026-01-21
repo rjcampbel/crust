@@ -59,7 +59,8 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
                },
                tacky::tacky::UnaryOp::Complement => {
                   assembly::UnaryOp::Not
-               }
+               },
+               _ => todo!()
             };
             instructions.push(Instruction::Mov(src, dst.clone()));
             instructions.push(Instruction::Unary(op, dst));
@@ -113,8 +114,10 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
                   instructions.push(Instruction::Mov(left.clone(), dst.clone()));
                   instructions.push(Instruction::Shr(right.clone(), dst.clone()));
                },
+               _ => todo!()
             };
-         }
+         },
+         _ => todo!()
       }
    }
    Ok(instructions)

@@ -22,6 +22,20 @@ pub enum Instr {
       right: Val,
       dest: Val,
    },
+   Copy {
+      src: Val,
+      dest: Val,
+   },
+   Jump(String),
+   JumpIfZero {
+      condition: Val,
+      target: String,
+   },
+   JumpIfNotZero {
+      condition: Val,
+      target: String,
+   },
+   Label(String),
 }
 
 #[derive(Clone, Debug)]
@@ -34,6 +48,7 @@ pub enum Val {
 pub enum UnaryOp {
    Negate,
    Complement,
+   Not,
 }
 
 #[derive(Debug)]
@@ -48,4 +63,12 @@ pub enum BinaryOp {
    BitwiseXor,
    LeftShift,
    RightShift,
+   Equal,
+   NotEqual,
+   LessThan,
+   LessOrEqual,
+   GreaterThan,
+   GreaterOrEqual,
+   LogicalAnd,
+   LogicalOr,
 }

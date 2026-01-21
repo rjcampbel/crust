@@ -18,6 +18,21 @@ pub fn print_tacky_ast(tacky_ast: &TackyAST) {
                },
                Instr::Binary { operator, left, right, dest } => {
                   println!("  {:?} {:?}, {:?} -> {:?}", operator, left, right, dest);
+               },
+               Instr::Copy { src, dest } => {
+                  println!("  COPY {:?} -> {:?}", src, dest);
+               },
+               Instr::Jump(label) => {
+                  println!("  JUMP {:?}", label);
+               },
+               Instr::JumpIfZero { condition, target } => {
+                  println!("  JZ {:?} -> {:?}", condition, target);
+               },
+               Instr::JumpIfNotZero { condition, target } => {
+                  println!("  JNZ {:?} -> {:?} ", condition, target);
+               },
+               Instr::Label(label) => {
+                  println!("  LABEL {:?}", label);
                }
             }
          }

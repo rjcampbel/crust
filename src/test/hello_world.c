@@ -1,3 +1,3 @@
 int main(void) {
-    return -5 >> 30;
+    return 0 && 1;
 }
