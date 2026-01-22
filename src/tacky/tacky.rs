@@ -69,6 +69,4 @@ pub enum BinaryOp {
    LessOrEqual,
    GreaterThan,
    GreaterOrEqual,
-   LogicalAnd,
-   LogicalOr,
 }
