@@ -49,7 +49,7 @@ pub enum Instruction {
    Cdq,
    Jmp(String),
    JmpCC(ConditionCode, String),
-   SetCC(ConditionCode, String),
+   SetCC(ConditionCode, Operand),
    Label(String),
    AllocateStack(i64),
    Return
@@ -68,7 +68,7 @@ impl fmt::Display for Instruction {
          Instruction::Cdq => write!(f, "\tcdq"),
          Instruction::Jmp(label) => write!(f, "\tjmp {}", label),
          Instruction::JmpCC(condition, label) => write!(f, "\tj{} {}", condition, label),
-         Instruction::SetCC(condition, label) => write!(f, "\tset{} {}", condition, label),
+         Instruction::SetCC(condition, operand) => write!(f, "\tset{} {}", condition, operand),
          Instruction::Label(label) => write!(f, ".L{}", label),
          Instruction::Idiv(operand) => write!(f, "\tidivl {}", operand),
          Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
