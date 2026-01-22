@@ -74,6 +74,14 @@ impl TokenType {
          TokenType::Pipe => Precedence::BitwiseOr,
          TokenType::Caret => Precedence::BitwiseXor,
          TokenType::Ampersand => Precedence::BitwiseAnd,
+         TokenType::DoubleAmpersand => Precedence::LogicalAnd,
+         TokenType::DoublePipe => Precedence::LogicalOr,
+         TokenType::Less => Precedence::Comparison,
+         TokenType::LessOrEqual => Precedence::Comparison,
+         TokenType::Greater => Precedence::Comparison,
+         TokenType::GreaterOrEqual => Precedence::Comparison,
+         TokenType::DoubleEqual => Precedence::Equality,
+         TokenType::BangEqual => Precedence::Equality,
          _ => Precedence::None,
       }
    }

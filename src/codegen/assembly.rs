@@ -66,10 +66,10 @@ impl fmt::Display for Instruction {
          Instruction::Shr(dst, count) => write!(f, "\tsarl {}, {}", dst, count),
          Instruction::Cmp(left, right) => write!(f, "\tcmpl {}, {}", left, right),
          Instruction::Cdq => write!(f, "\tcdq"),
-         Instruction::Jmp(label) => write!(f, "\tjmp {}", label),
-         Instruction::JmpCC(condition, label) => write!(f, "\tj{} {}", condition, label),
+         Instruction::Jmp(label) => write!(f, "\tjmp L{}", label),
+         Instruction::JmpCC(condition, label) => write!(f, "\tj{} L{}", condition, label),
          Instruction::SetCC(condition, operand) => write!(f, "\tset{} {}", condition, operand),
-         Instruction::Label(label) => write!(f, ".L{}", label),
+         Instruction::Label(label) => write!(f, "L{}:", label),
          Instruction::Idiv(operand) => write!(f, "\tidivl {}", operand),
          Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
          Instruction::Return => {

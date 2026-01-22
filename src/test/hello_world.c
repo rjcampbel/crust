@@ -1,3 +1,4 @@
 int main(void) {
-    return 0 && 1;
+    // & has lower precedence than ==
+    return 5 & 7 == 5;
 }

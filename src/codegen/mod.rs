@@ -136,7 +136,7 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
                   instructions.push(Instruction::Mov(left.clone(), dst.clone()));
                   instructions.push(Instruction::Shr(right.clone(), dst.clone()));
                },
-               _ => todo!()
+               _ => unreachable!()
             };
          },
          tacky::Instr::Jump(label) => {
@@ -245,7 +245,7 @@ fn fixup_instructions(assembly: &mut AssemblyAST) {
                },
                Instruction::Cmp(Operand::Stack(left), Operand::Stack(right)) => {
                   new_instructions.push(Instruction::Mov(Operand::Stack(*left), Operand::Register(Register::R10)));
-                  new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*right)));
+                  new_instructions.push(Instruction::Cmp(Operand::Register(Register::R10), Operand::Stack(*right)));
                },
                Instruction::Cmp(left @ _, right @ Operand::Immediate(_)) => {
                   new_instructions.push(Instruction::Mov(right.clone(), Operand::Register(Register::R10)));
