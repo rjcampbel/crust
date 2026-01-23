@@ -187,7 +187,7 @@ impl<'a> Lexer<'a> {
       }
 
       if is_alpha(self.peek()) {
-         while !self.at_end() && is_alpha(self.peek()) {
+         while !self.at_end() && (is_alpha(self.peek()) || is_digit(self.peek())) {
             self.advance();
          }
          bail!(error(self.line, self.lexeme(), ErrorType::InvalidIdentifier))
@@ -200,7 +200,7 @@ impl<'a> Lexer<'a> {
    }
 
    fn identifier(&mut self) -> Result<()> {
-      while !self.at_end() && is_alpha(self.peek()) {
+      while !self.at_end() && (is_alpha(self.peek()) || is_digit(self.peek())) {
          self.advance();
       }
 

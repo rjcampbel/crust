@@ -11,6 +11,7 @@ use num::traits::FromPrimitive;
 #[repr(u8)]
 enum Precedence {
    None,
+   Assignment,
    LogicalOr,
    LogicalAnd,
    BitwiseOr,
@@ -82,6 +83,7 @@ impl TokenType {
          TokenType::GreaterOrEqual => Precedence::Comparison,
          TokenType::DoubleEqual => Precedence::Equality,
          TokenType::BangEqual => Precedence::Equality,
+         TokenType::Equal => Precedence::Assignment,
          _ => Precedence::None,
       }
    }
@@ -176,9 +178,40 @@ impl Parser {
       self.consume(TokenType::Void)?;
       self.consume(TokenType::CloseParen)?;
       self.consume(TokenType::OpenBrace)?;
-      let stmt = self.statement()?;
+      let body = self.body()?;
       self.consume(TokenType::CloseBrace)?;
-      Ok(Program::Function { name: name, stmt: stmt })
+      Ok(Program::FunctionDefinition(FunctionDefinition::Function(name, body)))
+   }
+
+   fn body(&mut self) -> Result<Vec<BlockItem>> {
+      let mut body = Vec::new();
+      while !self.at_end() && self.peek().token_type != TokenType::CloseBrace {
+         let block_item = self.block_item()?;
+         body.push(block_item);
+      }
+      Ok(body)
+   }
+
+   fn block_item(&mut self) -> Result<BlockItem> {
+      match self.peek().token_type {
+         TokenType::Int => {
+            self.declaration()
+         },
+         _ => self.statement()
+      }
+   }
+
+   fn declaration(&mut self) -> Result<BlockItem> {
+      self.consume(TokenType::Int)?;
+      let name = self.identifier()?;
+      let expr = if self.peek().token_type == TokenType::Equal {
+         self.advance();
+         Some(self.expression(Precedence::None)?)
+      } else {
+         None
+      };
+      self.consume(TokenType::Semicolon)?;
+      Ok(BlockItem::Decl(Decl::Decl(name, expr)))
    }
 
    fn identifier(&mut self) -> Result<String> {
@@ -194,26 +227,41 @@ impl Parser {
       }
    }
 
-   fn statement(&mut self) -> Result<Stmt> {
-      self.consume(TokenType::Return)?;
-      let expr = self.expression(Precedence::None)?;
-      self.consume(TokenType::Semicolon)?;
-      Ok(Stmt::Return(expr))
+   fn statement(&mut self) -> Result<BlockItem> {
+      if self.peek().token_type == TokenType::Return {
+         self.advance();
+         let expr = self.expression(Precedence::None)?;
+         self.consume(TokenType::Semicolon)?;
+         return Ok(BlockItem::Stmt(Stmt::Return(expr)))
+      } else if self.peek().token_type == TokenType::Semicolon {
+         self.advance();
+         return Ok(BlockItem::Stmt(Stmt::Null));
+      } else {
+         let expr = self.expression(Precedence::None)?;
+         self.consume(TokenType::Semicolon)?;
+         return Ok(BlockItem::Stmt(Stmt::Expression(expr)));
+      }
    }
 
    fn expression(&mut self, min_prec: Precedence) -> Result<Expr> {
       let mut left: Expr = self.factor()?;
 
-      while self.peek().token_type.precedence() >= min_prec && self.match_binary_op() {
-         let operator_type = self.previous().token_type.clone();
-         let next_prec = operator_type.precedence().increment();
-         let binary_op = operator_type.to_binary_op();
-         let right = self.expression(next_prec)?;
-         left = Expr::BinaryOp {
-            operator: binary_op,
-            left: Box::new(left.clone()),
-            right: Box::new(right)
-         };
+      while self.peek().token_type.precedence() >= min_prec && (self.match_binary_op() || self.match_token(TokenType::Equal)) {
+         if self.previous().token_type == TokenType::Equal {
+            let prec = self.previous().token_type.precedence();
+            let right = self.expression(prec)?;
+            left = Expr::Assignment(Box::new(left.clone()), Box::new(right));
+         } else {
+            let operator_type = self.previous().token_type.clone();
+            let next_prec = operator_type.precedence().increment();
+            let binary_op = operator_type.to_binary_op();
+            let right = self.expression(next_prec)?;
+            left = Expr::BinaryOp {
+               operator: binary_op,
+               left: Box::new(left.clone()),
+               right: Box::new(right)
+            };
+         }
       }
       Ok(left)
    }
@@ -244,6 +292,9 @@ impl Parser {
                self.consume(TokenType::CloseParen)?;
                Ok(expr)
             },
+            TokenType::Identifier => {
+               Ok(Expr::Var(self.identifier()?))
+            },
             _ => {
                let t = self.peek();
                bail!(error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), ErrorType::SyntaxError))
@@ -259,13 +310,13 @@ impl Parser {
       bail!(error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), ErrorType::SyntaxError))
    }
 
-   // fn match_token(&mut self, token_type: TokenType) -> bool {
-   //    if self.check(&token_type) {
-   //       self.advance();
-   //       return true;
-   //    }
-   //    false
-   // }
+   fn match_token(&mut self, token_type: TokenType) -> bool {
+      if self.check(&token_type) {
+         self.advance();
+         return true;
+      }
+      false
+   }
 
    fn previous(&mut self) -> &Token {
       &self.tokens[self.current - 1]

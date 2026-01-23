@@ -1,7 +1,7 @@
 pub mod tacky;
 mod tacky_printer;
 
-use crate::parser::ast::{AST, Program, Stmt, Expr};
+use crate::parser::ast::{AST, Expr, FunctionDefinition, Program, Stmt};
 use crate::parser::ast;
 use tacky::*;
 use anyhow::Result;
@@ -23,9 +23,10 @@ pub fn gen_tacky(ast: &AST, print_tacky: bool) -> Result<TackyAST> {
 
 fn gen_tacky_program(ast: &AST) -> Result<TackyAST> {
     match &ast.program {
-        Program::Function { name, stmt } => {
-            let program = gen_tacky_function(name, stmt)?;
-            Ok(TackyAST { program })
+        Program::FunctionDefinition(FunctionDefinition::Function(_name, _body)) => {
+            // let program = gen_tacky_function(name, body)?;
+            // Ok(TackyAST { program })
+            todo!()
         }
     }
 }
@@ -35,7 +36,8 @@ fn gen_tacky_function(name: &String, stmt: &Stmt) -> Result<TackyProgram> {
     match &stmt {
         Stmt::Return(expr) => {
             gen_return_instrs(expr, &mut instrs)?;
-        }
+        },
+        _ => todo!()
     }
     Ok(TackyProgram::Function {
         identifier: name.clone(),
@@ -107,7 +109,8 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 dest: dest.clone(),
             });
             Ok(dest)
-        }
+        },
+        _ => todo!()
     }
 }
 

@@ -3,19 +3,32 @@ pub struct AST {
 }
 
 pub enum Program {
-   Function {
-      name: String,
-      stmt: Stmt,
-   }
+   FunctionDefinition(FunctionDefinition),
+}
+
+pub enum FunctionDefinition {
+   Function(String, Vec<BlockItem>),
+}
+
+pub enum BlockItem {
+   Stmt(Stmt),
+   Decl(Decl)
+}
+
+pub enum Decl {
+   Decl(String, Option<Expr>),
 }
 
 pub enum Stmt {
-   Return(Expr)
+   Return(Expr),
+   Expression(Expr),
+   Null,
 }
 
 #[derive(Clone)]
 pub enum Expr {
    Integer(i64),
+   Var(String),
    UnaryOp {
       operator: UnaryOp,
       expr: Box<Expr>,
@@ -24,7 +37,8 @@ pub enum Expr {
       operator: BinaryOp,
       left: Box<Expr>,
       right: Box<Expr>,
-   }
+   },
+   Assignment(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Clone)]

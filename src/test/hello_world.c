@@ -1,4 +1,7 @@
+// Test that we can properly lex identifiers that start with keywords
+
 int main(void) {
-    // & has lower precedence than ==
-    return 5 & 7 == 5;
+    int return_val = 3;
+    int void2 = 2;
+    return return_val + void2;
 }

@@ -3,12 +3,27 @@ use crate::parser::ast::*;
 pub fn print_ast(ast: &AST) {
    println!("AST:");
    match &ast.program {
-      Program::Function { name, stmt } => {
+      Program::FunctionDefinition(FunctionDefinition::Function(name, body))  => {
          println!("Function: {}", name);
-         match stmt {
-            Stmt::Return(expr) => {
-               println!("  Return:");
-               print_expr(expr, 4);
+         for item in body {
+            match item {
+               BlockItem::Stmt(Stmt::Return(expr)) => {
+                  println!("  Return:");
+                  print_expr(expr, 4);
+               },
+               BlockItem::Stmt(Stmt::Expression(expr)) => {
+                  println!("  Expression:");
+                  print_expr(expr, 4);
+               },
+               BlockItem::Stmt(Stmt::Null) => {
+                  println!("  NULL");
+               },
+               BlockItem::Decl(Decl::Decl(name, expr)) => {
+                  println!("  Decl: {}", name);
+                  if let Some(e) = expr {
+                     print_expr(e, 4);
+                  }
+               }
             }
          }
       }
@@ -21,6 +36,9 @@ fn print_expr(expr: &Expr, indent: usize) {
       Expr::Integer(value) => {
          println!("{}Integer: {}", indentation, value);
       },
+      Expr::Var(identifier) => {
+         println!("{}Identifier: {}", indentation, identifier);
+      }
       Expr::UnaryOp { operator, expr } => {
          match operator {
             UnaryOp::Complement => {
@@ -92,6 +110,11 @@ fn print_expr(expr: &Expr, indent: usize) {
                println!("{}BinaryOp: GreaterOrEqual", indentation);
             },
          }
+         print_expr(left, indent + 2);
+         print_expr(right, indent + 2);
+      },
+      Expr::Assignment(left, right) => {
+         println!("{}Assignment: ", indent);
          print_expr(left, indent + 2);
          print_expr(right, indent + 2);
       }
