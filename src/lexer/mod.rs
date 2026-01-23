@@ -143,6 +143,8 @@ impl<'a> Lexer<'a> {
             if !self.at_end() && self.peek() == '=' {
                self.advance();
                self.add_token(TokenType::DoubleEqual);
+            } else {
+               self.add_token(TokenType::Equal);
             }
          }
          '\n'=> self.line += 1,

@@ -29,6 +29,7 @@ pub enum TokenType {
    Bang,
    DoubleEqual,
    BangEqual,
+   Equal,
 
    // Keywords
    Int,
@@ -92,6 +93,7 @@ impl fmt::Display for TokenType {
          TokenType::Return => write!(f, "return"),
          TokenType::Integer(i) => write!(f, "{}", i),
          TokenType::Identifier => write!(f, "identifier"),
+         TokenType::Equal => write!(f, "="),
          TokenType::EOF => write!(f, "EOF"),
       }
    }
