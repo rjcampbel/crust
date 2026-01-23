@@ -106,26 +106,26 @@ impl TokenType {
       TokenType::Greater,
       TokenType::GreaterOrEqual];
 
-   fn to_binary_op(self) -> Result<BinaryOp> {
+   fn to_binary_op(self) -> BinaryOp {
       match self {
-         TokenType::Plus => Ok(BinaryOp::Add),
-         TokenType::Dash => Ok(BinaryOp::Subtract),
-         TokenType::Star => Ok(BinaryOp::Multiply),
-         TokenType::Slash => Ok(BinaryOp::Divide),
-         TokenType::Percent => Ok(BinaryOp::Modulus),
-         TokenType::Ampersand => Ok(BinaryOp::BitwiseAnd),
-         TokenType::Pipe => Ok(BinaryOp::BitwiseOr),
-         TokenType::Caret => Ok(BinaryOp::BitwiseXor),
-         TokenType::DoubleLess => Ok(BinaryOp::LeftShift),
-         TokenType::DoubleGreater => Ok(BinaryOp::RightShift),
-         TokenType::DoubleAmpersand => Ok(BinaryOp::LogicalAnd),
-         TokenType::DoublePipe => Ok(BinaryOp::LogicalOr),
-         TokenType::DoubleEqual => Ok(BinaryOp::Equal),
-         TokenType::BangEqual => Ok(BinaryOp::NotEqual),
-         TokenType::Less => Ok(BinaryOp::LessThan),
-         TokenType::LessOrEqual => Ok(BinaryOp::LessOrEqual),
-         TokenType::Greater => Ok(BinaryOp::GreaterThan),
-         TokenType::GreaterOrEqual => Ok(BinaryOp::GreaterOrEqual),
+         TokenType::Plus => BinaryOp::Add,
+         TokenType::Dash => BinaryOp::Subtract,
+         TokenType::Star => BinaryOp::Multiply,
+         TokenType::Slash => BinaryOp::Divide,
+         TokenType::Percent => BinaryOp::Modulus,
+         TokenType::Ampersand => BinaryOp::BitwiseAnd,
+         TokenType::Pipe => BinaryOp::BitwiseOr,
+         TokenType::Caret => BinaryOp::BitwiseXor,
+         TokenType::DoubleLess => BinaryOp::LeftShift,
+         TokenType::DoubleGreater => BinaryOp::RightShift,
+         TokenType::DoubleAmpersand => BinaryOp::LogicalAnd,
+         TokenType::DoublePipe => BinaryOp::LogicalOr,
+         TokenType::DoubleEqual => BinaryOp::Equal,
+         TokenType::BangEqual => BinaryOp::NotEqual,
+         TokenType::Less => BinaryOp::LessThan,
+         TokenType::LessOrEqual => BinaryOp::LessOrEqual,
+         TokenType::Greater => BinaryOp::GreaterThan,
+         TokenType::GreaterOrEqual => BinaryOp::GreaterOrEqual,
          _ => unreachable!()
       }
    }
@@ -135,11 +135,11 @@ impl TokenType {
       TokenType::Tilde,
       TokenType::Bang];
 
-   fn to_unary_op(self) -> Result<UnaryOp> {
+   fn to_unary_op(self) -> UnaryOp {
       match self {
-         TokenType::Dash => Ok(UnaryOp::Negate),
-         TokenType::Tilde => Ok(UnaryOp::Complement),
-         TokenType::Bang => Ok(UnaryOp::Not),
+         TokenType::Dash => UnaryOp::Negate,
+         TokenType::Tilde => UnaryOp::Complement,
+         TokenType::Bang => UnaryOp::Not,
          _ => unreachable!()
       }
    }
@@ -207,7 +207,7 @@ impl Parser {
       while self.peek().token_type.precedence() >= min_prec && self.match_binary_op() {
          let operator_type = self.previous().token_type.clone();
          let next_prec = operator_type.precedence().increment();
-         let binary_op = operator_type.to_binary_op()?;
+         let binary_op = operator_type.to_binary_op();
          let right = self.expression(next_prec)?;
          left = Expr::BinaryOp {
             operator: binary_op,
@@ -220,7 +220,7 @@ impl Parser {
 
    fn unary(&mut self) -> Result<Expr> {
       let operator_type = self.previous().token_type.clone();
-      let unary_op = operator_type.to_unary_op()?;
+      let unary_op = operator_type.to_unary_op();
       let expr = self.factor()?;
       Ok(Expr::UnaryOp {
          operator: unary_op,
