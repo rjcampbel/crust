@@ -97,7 +97,7 @@ impl Validator {
             if let Some(unique_name) = self.variable_map.get(name) {
                return Ok(Expr::Var(unique_name.clone(), *line_number));
             } else {
-               bail!(error::error(*line_number, format!("undeclared variable"), error::ErrorType::SyntaxError))
+               bail!(error::error(*line_number, format!("Undeclared variable {}", name), error::ErrorType::SyntaxError))
             }
          },
          Expr::BinaryOp { operator, left, right, line_number} => {
