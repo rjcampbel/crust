@@ -6,6 +6,7 @@ mod parser;
 mod tacky;
 mod validator;
 mod error;
+mod name_generator;
 
 use anyhow::Result;
 use clap::Parser;

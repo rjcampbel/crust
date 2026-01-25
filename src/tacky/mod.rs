@@ -7,14 +7,9 @@ use tacky::*;
 use anyhow::Result;
 use anyhow::bail;
 use std::sync::atomic::{Ordering, AtomicUsize};
+use crate::name_generator;
 
-static TMP_COUNTER: AtomicUsize = AtomicUsize::new(0);
 static LBL_COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-fn gen_var_name() -> String {
-    let counter = TMP_COUNTER.fetch_add(1, Ordering::SeqCst);
-    format!("tmp.{}", counter)
-}
 
 fn gen_label(name: &str) -> String {
     let counter = LBL_COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -68,7 +63,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
         },
         Expr::UnaryOp { operator, expr } => {
             let src = gen_expr_instrs(expr, instrs)?;
-            let dest = Val::Var(gen_var_name());
+            let dest = Val::Var(name_generator::gen_var_name());
             let unary_op = match operator {
                 ast::UnaryOp::Negate => UnaryOp::Negate,
                 ast::UnaryOp::Complement => UnaryOp::Complement,
@@ -90,7 +85,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
         Expr::BinaryOp { operator, left, right } => {
             let left = gen_expr_instrs(left, instrs)?;
             let right = gen_expr_instrs(right, instrs)?;
-            let dest = Val::Var(gen_var_name());
+            let dest = Val::Var(name_generator::gen_var_name());
             let binary_op = match operator {
                 ast::BinaryOp::Add => BinaryOp::Add,
                 ast::BinaryOp::Subtract => BinaryOp::Subtract,
@@ -129,7 +124,7 @@ fn gen_logical_and(left: &Box<Expr>, right: &Box<Expr>, instrs: &mut Vec<Instr>)
     instrs.push(Instr::JumpIfZero { condition: left, target: false_label.to_string() });
     let right = gen_expr_instrs(right, instrs)?;
     instrs.push(Instr::JumpIfZero { condition: right, target: false_label.to_string() });
-    let dest = Val::Var(gen_var_name());
+    let dest = Val::Var(name_generator::gen_var_name());
     instrs.push(Instr::Copy { src: Val::Integer(1), dest: dest.clone() });
     instrs.push(Instr::Jump(end_label.to_string()));
     instrs.push(Instr::Label(false_label.to_string()));
@@ -145,7 +140,7 @@ fn gen_logical_or(left: &Box<Expr>, right: &Box<Expr>, instrs: &mut Vec<Instr>) 
     instrs.push(Instr::JumpIfNotZero { condition: left, target: true_label.to_string() });
     let right = gen_expr_instrs(right, instrs)?;
     instrs.push(Instr::JumpIfNotZero { condition: right, target: true_label.to_string() });
-    let dest = Val::Var(gen_var_name());
+    let dest = Val::Var(name_generator::gen_var_name());
     instrs.push(Instr::Copy { src: Val::Integer(0), dest: dest.clone() });
     instrs.push(Instr::Jump(end_label.to_string()));
     instrs.push(Instr::Label(true_label.to_string()));
