@@ -3,6 +3,7 @@ use crate::parser::ast_printer;
 use anyhow::{Result, bail};
 use crate::name_generator;
 use std::collections::HashMap;
+use crate::error;
 
 struct Validator {
    variable_map: HashMap<String, String>
@@ -68,10 +69,50 @@ impl Validator {
    }
 
    fn resolve_declaration(&mut self, decl: &Decl) -> Result<Decl> {
-      bail!("unimpl")
+      let Decl::Decl(name, initializer, line_number) = decl;
+      if self.variable_map.contains_key(name) {
+         bail!(error::error(*line_number, format!("\"{}\" already declared.", name), error::ErrorType::SyntaxError))
+      }
+      let unique_name = name_generator::uniquify_identifier(name);
+      self.variable_map.insert(name.to_string(), unique_name.clone());
+
+      let initializer = if let Some(expr) = initializer {
+         Some(self.resolve_expr(expr)?)
+      } else {
+         None
+      };
+      Ok(Decl::Decl(unique_name, initializer, *line_number))
    }
 
    fn resolve_expr(&mut self, expr: &Expr) -> Result<Expr> {
-      bail!("unimpl")
+      match expr {
+         Expr::Assignment(left, right, line_number) => {
+            if let Expr::Var(_, _) = **left {
+               Ok(Expr::Assignment(Box::new(self.resolve_expr(&**left)?), Box::new(self.resolve_expr(&**right)?), *line_number))
+            } else {
+               bail!(error::error(*line_number, format!("Invalid lvalue"), error::ErrorType::SyntaxError))
+            }
+         },
+         Expr::Var(name, line_number) => {
+            if let Some(unique_name) = self.variable_map.get(name) {
+               return Ok(Expr::Var(unique_name.clone(), *line_number));
+            } else {
+               bail!(error::error(*line_number, format!("undeclared variable"), error::ErrorType::SyntaxError))
+            }
+         },
+         Expr::BinaryOp { operator, left, right, line_number} => {
+            Ok(Expr::BinaryOp {
+                  operator: operator.clone(),
+                  left: Box::new(self.resolve_expr(&**left)?),
+                  right: Box::new(self.resolve_expr(&**right)?),
+                  line_number: *line_number })
+         },
+         Expr::Integer(i, line_number) => {
+            Ok(Expr::Integer(*i, *line_number))
+         },
+         Expr::UnaryOp { operator, expr, line_number } => {
+            Ok(Expr::UnaryOp { operator: operator.clone(), expr: Box::new(self.resolve_expr(&**expr)?), line_number: *line_number })
+         }
+      }
    }
 }

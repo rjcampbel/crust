@@ -18,7 +18,7 @@ pub fn print_ast(ast: &AST) {
                BlockItem::Stmt(Stmt::Null) => {
                   println!("  NULL");
                },
-               BlockItem::Decl(Decl::Decl(name, expr)) => {
+               BlockItem::Decl(Decl::Decl(name, expr, _)) => {
                   println!("  Decl: {}", name);
                   if let Some(e) = expr {
                      print_expr(e, 4);
@@ -33,13 +33,13 @@ pub fn print_ast(ast: &AST) {
 fn print_expr(expr: &Expr, indent: usize) {
    let indentation = " ".repeat(indent);
    match expr {
-      Expr::Integer(value) => {
+      Expr::Integer(value, _) => {
          println!("{}Integer: {}", indentation, value);
       },
-      Expr::Var(identifier) => {
+      Expr::Var(identifier, _) => {
          println!("{}Identifier: {}", indentation, identifier);
       }
-      Expr::UnaryOp { operator, expr } => {
+      Expr::UnaryOp { operator, expr, .. } => {
          match operator {
             UnaryOp::Complement => {
                println!("{}UnaryOp: Complement", indentation);
@@ -53,7 +53,7 @@ fn print_expr(expr: &Expr, indent: usize) {
          }
          print_expr(expr, indent + 2);
       },
-      Expr::BinaryOp { operator, left, right } => {
+      Expr::BinaryOp { operator, left, right, .. } => {
          match operator {
             BinaryOp::Add => {
                println!("{}BinaryOp: Add", indentation);
@@ -113,7 +113,7 @@ fn print_expr(expr: &Expr, indent: usize) {
          print_expr(left, indent + 2);
          print_expr(right, indent + 2);
       },
-      Expr::Assignment(left, right) => {
+      Expr::Assignment(left, right, _) => {
          println!("{}Assignment: ", indent);
          print_expr(left, indent + 2);
          print_expr(right, indent + 2);

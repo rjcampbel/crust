@@ -16,7 +16,7 @@ pub enum BlockItem {
 }
 
 pub enum Decl {
-   Decl(String, Option<Expr>),
+   Decl(String, Option<Expr>, usize),
 }
 
 pub enum Stmt {
@@ -27,18 +27,20 @@ pub enum Stmt {
 
 #[derive(Clone)]
 pub enum Expr {
-   Integer(i64),
-   Var(String),
+   Integer(i64, usize),
+   Var(String, usize),
    UnaryOp {
       operator: UnaryOp,
       expr: Box<Expr>,
+      line_number: usize,
    },
    BinaryOp {
       operator: BinaryOp,
       left: Box<Expr>,
       right: Box<Expr>,
+      line_number: usize,
    },
-   Assignment(Box<Expr>, Box<Expr>),
+   Assignment(Box<Expr>, Box<Expr>, usize),
 }
 
 #[derive(Clone)]

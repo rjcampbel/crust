@@ -191,8 +191,9 @@ impl Parser {
       } else {
          None
       };
+      let line = self.peek().line_number;
       self.consume(TokenType::Semicolon)?;
-      Ok(BlockItem::Decl(Decl::Decl(name, expr)))
+      Ok(BlockItem::Decl(Decl::Decl(name, expr, line)))
    }
 
    fn identifier(&mut self) -> Result<String> {
@@ -230,17 +231,20 @@ impl Parser {
       while self.peek().token_type.precedence() >= min_prec && (self.match_binary_op() || self.match_token(TokenType::Equal)) {
          if self.previous().token_type == TokenType::Equal {
             let prec = self.previous().token_type.precedence();
+            let line_number = self.previous().line_number;
             let right = self.expression(prec)?;
-            left = Expr::Assignment(Box::new(left.clone()), Box::new(right));
+            left = Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number);
          } else {
             let operator_type = self.previous().token_type.clone();
+            let line_number = self.previous().line_number;
             let next_prec = operator_type.precedence().increment();
             let binary_op = operator_type.to_binary_op();
             let right = self.expression(next_prec)?;
             left = Expr::BinaryOp {
                operator: binary_op,
                left: Box::new(left.clone()),
-               right: Box::new(right)
+               right: Box::new(right),
+               line_number
             };
          }
       }
@@ -249,11 +253,13 @@ impl Parser {
 
    fn unary(&mut self) -> Result<Expr> {
       let operator_type = self.previous().token_type.clone();
+      let line_number = self.previous().line_number;
       let unary_op = operator_type.to_unary_op();
       let expr = self.factor()?;
       Ok(Expr::UnaryOp {
          operator: unary_op,
          expr: Box::new(expr),
+         line_number
       })
    }
 
@@ -263,8 +269,9 @@ impl Parser {
       } else {
          match self.peek().token_type {
             TokenType::Integer(i) => {
+               let line_number = self.peek().line_number;
                self.advance();
-               Ok(Expr::Integer(i))
+               Ok(Expr::Integer(i, line_number))
             },
             TokenType::OpenParen => {
                self.advance();
@@ -274,7 +281,8 @@ impl Parser {
                Ok(expr)
             },
             TokenType::Identifier => {
-               Ok(Expr::Var(self.identifier()?))
+               let line_number = self.peek().line_number;
+               Ok(Expr::Var(self.identifier()?, line_number))
             },
             _ => {
                let t = self.peek();
