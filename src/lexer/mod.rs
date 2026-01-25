@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 use std::fs;
 use std::path::Path;
 use token::{Token, TokenType};
-use thiserror::Error;
+use crate::error;
 
 pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
    let source  = fs::read_to_string(source)?.chars().collect();
@@ -26,26 +26,6 @@ struct Lexer<'a> {
    start: usize,
    current: usize,
    line: usize,
-}
-
-#[derive(Error, Debug)]
-enum LexError {
-   #[error("[line {}] Error at '{}': Invalid Token", line, msg)]
-   InvalidToken {
-      line: usize,
-      msg: String,
-   },
-
-   #[error("[line {}] Error at '{}': Invalid Identifier", line, msg)]
-   InvalidIdentifier {
-      line: usize,
-      msg: String
-   }
-}
-
-enum ErrorType {
-   InvalidToken,
-   InvalidIdentifier,
 }
 
 impl<'a> Lexer<'a> {
@@ -151,7 +131,7 @@ impl<'a> Lexer<'a> {
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,
          _ if is_alpha(c) => self.identifier()?,
-         _ => bail!(error(self.line, String::from(c), ErrorType::InvalidToken))
+         _ => bail!(error::error(self.line, String::from(c), error::ErrorType::InvalidToken))
       };
 
       Ok(())
@@ -190,7 +170,7 @@ impl<'a> Lexer<'a> {
          while !self.at_end() && (is_alpha(self.peek()) || is_digit(self.peek())) {
             self.advance();
          }
-         bail!(error(self.line, self.lexeme(), ErrorType::InvalidIdentifier))
+         bail!(error::error(self.line, self.lexeme(), error::ErrorType::InvalidIdentifier))
       }
 
       let token_string = self.lexeme();
@@ -222,11 +202,4 @@ fn is_alpha(c: char) -> bool {
 
 fn is_digit(c: char) -> bool {
    c.is_digit(10)
-}
-
-fn error(line: usize, msg: String, err_type: ErrorType) -> LexError {
-   match err_type {
-      ErrorType::InvalidIdentifier => LexError::InvalidIdentifier { line, msg },
-      ErrorType::InvalidToken => LexError::InvalidToken { line, msg }
-   }
 }

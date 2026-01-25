@@ -5,6 +5,7 @@ mod lexer;
 mod parser;
 mod tacky;
 mod validator;
+mod error;
 
 use anyhow::Result;
 use clap::Parser;
