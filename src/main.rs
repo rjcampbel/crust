@@ -4,6 +4,7 @@ mod gcc;
 mod lexer;
 mod parser;
 mod tacky;
+mod validator;
 
 use anyhow::Result;
 use clap::Parser;
@@ -36,7 +37,11 @@ struct Cli {
     #[arg(long, short)]
     tacky: bool,
 
-    /// Run only the lexer, parser, and assembly generation
+    /// Run only the lexer, parser, and validator
+    #[arg(long, short)]
+    validate: bool,
+
+    /// Run only the lexer, parser, validator, and assembly generation
     #[arg(long, short)]
     codegen: bool,
 
@@ -74,9 +79,17 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
+    if args.validate {
+        let tokens = lex(&pp_source, args.print_tokens)?;
+        let ast = parse(tokens, args.print_ast)?;
+        let _ = validate(&ast, args.print_ast)?;
+        return Ok(());
+    }
+
     if args.tacky {
         let tokens = lex(&pp_source, args.print_tokens)?;
         let ast = parse(tokens, args.print_ast)?;
+        let ast = validate(&ast, args.print_ast)?;
         let _ = gen_tacky(&ast, args.print_tacky)?;
         return Ok(());
     }
@@ -84,6 +97,7 @@ fn main() -> Result<()> {
     if args.codegen {
         let tokens = lex(&pp_source, args.print_tokens)?;
         let ast = parse(tokens, args.print_ast)?;
+        let ast = validate(&ast, args.print_ast)?;
         let tacky = gen_tacky(&ast, args.print_tacky)?;
         let _ = codegen(&tacky, args.print_assembly)?;
         return Ok(());
@@ -107,6 +121,10 @@ fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
     parser::parse(tokens, print_ast)
 }
 
+fn validate(ast: &AST, print_ast: bool) -> Result<AST> {
+    validator::validate(&ast, print_ast)
+}
+
 fn gen_tacky(ast: &AST, print_tacky: bool) -> Result<TackyAST> {
     tacky::gen_tacky(ast, print_tacky)
 }
@@ -118,6 +136,7 @@ fn codegen(tacky: &TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
 fn build(source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<()> {
     let tokens = lex(&source, print_tokens)?;
     let ast = parse(tokens, print_ast)?;
+    let ast = validate(&ast, print_ast)?;
     let tacky = gen_tacky(&ast, print_tacky)?;
     let assembly_ast = codegen(&tacky, print_assembly)?;
     let output = source.with_extension("s");

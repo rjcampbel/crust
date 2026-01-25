@@ -1,5 +1,5 @@
 pub mod ast;
-mod ast_printer;
+pub mod ast_printer;
 
 use anyhow::{bail, ensure, Result};
 use crate::lexer::token::{Token, TokenType};
