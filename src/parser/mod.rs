@@ -4,8 +4,8 @@ pub mod ast_printer;
 use anyhow::{bail, ensure, Result};
 use crate::lexer::token::{Token, TokenType};
 use ast::*;
-use thiserror::Error;
 use num::traits::FromPrimitive;
+use crate::error;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
 #[repr(u8)]
@@ -31,25 +31,6 @@ impl Precedence {
          Some(p) => p,
          _ => Precedence::Max,
       }
-   }
-}
-
-#[derive(Error, Debug)]
-enum ParseError {
-   #[error("[line {}] Syntax Error: {}", line, msg)]
-   SyntaxError {
-      line: usize,
-      msg: String,
-   },
-}
-
-enum ErrorType {
-   SyntaxError,
-}
-
-fn error(line: usize, msg: String, err_type: ErrorType) -> ParseError {
-   match err_type {
-      ErrorType::SyntaxError => ParseError::SyntaxError { line, msg }
    }
 }
 
@@ -222,7 +203,7 @@ impl Parser {
          },
          _ => {
             let t = self.peek();
-            bail!(error(t.line_number, format!("Expected an identifier, found '{}'", t.lexeme), ErrorType::SyntaxError))
+            bail!(error::error(t.line_number, format!("Expected an identifier, found '{}'", t.lexeme), error::ErrorType::SyntaxError))
          }
       }
    }
@@ -297,7 +278,7 @@ impl Parser {
             },
             _ => {
                let t = self.peek();
-               bail!(error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), ErrorType::SyntaxError))
+               bail!(error::error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), error::ErrorType::SyntaxError))
             }
          }
       }
@@ -307,7 +288,7 @@ impl Parser {
       if self.check(&token_type) {
          return Ok(self.advance());
       }
-      bail!(error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), ErrorType::SyntaxError))
+      bail!(error::error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), error::ErrorType::SyntaxError))
    }
 
    fn match_token(&mut self, token_type: TokenType) -> bool {

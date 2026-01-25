@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum LexError {
+pub enum Error {
    #[error("[line {}] Error at '{}': Invalid Token", line, msg)]
    InvalidToken {
       line: usize,
@@ -12,17 +12,25 @@ pub enum LexError {
    InvalidIdentifier {
       line: usize,
       msg: String
-   }
+   },
+
+   #[error("[line {}] Syntax Error: {}", line, msg)]
+   SyntaxError {
+      line: usize,
+      msg: String,
+   },
 }
 
 pub enum ErrorType {
    InvalidToken,
    InvalidIdentifier,
+   SyntaxError,
 }
 
-pub fn error(line: usize, msg: String, err_type: ErrorType) -> LexError {
+pub fn error(line: usize, msg: String, err_type: ErrorType) -> Error {
    match err_type {
-      ErrorType::InvalidIdentifier => LexError::InvalidIdentifier { line, msg },
-      ErrorType::InvalidToken => LexError::InvalidToken { line, msg }
+      ErrorType::InvalidIdentifier => Error::InvalidIdentifier { line, msg },
+      ErrorType::InvalidToken => Error::InvalidToken { line, msg },
+      ErrorType::SyntaxError => Error::SyntaxError { line, msg }
    }
 }
