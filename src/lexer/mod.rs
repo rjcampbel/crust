@@ -64,18 +64,55 @@ impl<'a> Lexer<'a> {
             if !self.at_end() && self.peek() == '-' {
                self.advance();
                self.add_token(TokenType::DoubleDash);
+            } else if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::MinusEqual);
             } else {
                self.add_token(TokenType::Dash);
             }
          },
-         '+' => self.add_token(TokenType::Plus),
-         '*' => self.add_token(TokenType::Star),
-         '/' => self.add_token(TokenType::Slash),
-         '%' => self.add_token(TokenType::Percent),
+         '+' => {
+            if !self.at_end() && self.peek() == '+' {
+               self.advance();
+               self.add_token(TokenType::DoublePlus);
+            } else if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::PlusEqual);
+            } else {
+               self.add_token(TokenType::Plus);
+            }
+         },
+         '*' => {
+            if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::StarEqual);
+            } else {
+               self.add_token(TokenType::Star);
+            }
+         }
+         '/' => {
+            if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::SlashEqual);
+            } else {
+               self.add_token(TokenType::Slash);
+            }
+         },
+         '%' => {
+            if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::PercentEqual);
+            } else {
+               self.add_token(TokenType::Percent);
+            }
+         },
          '&' => {
             if !self.at_end() && self.peek() == '&' {
                self.advance();
                self.add_token(TokenType::DoubleAmpersand);
+            } else if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::AndEqual);
             } else {
                self.add_token(TokenType::Ampersand);
             }
@@ -84,15 +121,30 @@ impl<'a> Lexer<'a> {
             if !self.at_end() && self.peek() == '|' {
                self.advance();
                self.add_token(TokenType::DoublePipe);
+            } else if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::OrEqual);
             } else {
                self.add_token(TokenType::Pipe);
             }
          },
-         '^' => self.add_token(TokenType::Caret),
+         '^' => {
+            if !self.at_end() && self.peek() == '=' {
+               self.advance();
+               self.add_token(TokenType::XorEqual);
+            } else {
+               self.add_token(TokenType::Caret);
+            }
+         }
          '<' => {
             if !self.at_end() && self.peek() == '<' {
                self.advance();
-               self.add_token(TokenType::DoubleLess);
+               if !self.at_end() && self.peek() == '=' {
+                  self.advance();
+                  self.add_token(TokenType::LeftShiftEqual);
+               } else {
+                  self.add_token(TokenType::DoubleLess);
+               }
             } else if !self.at_end() && self.peek() == '=' {
                self.advance();
                self.add_token(TokenType::LessOrEqual);
@@ -103,7 +155,12 @@ impl<'a> Lexer<'a> {
          '>' => {
             if !self.at_end() && self.peek() == '>' {
                self.advance();
-               self.add_token(TokenType::DoubleGreater);
+               if !self.at_end() && self.peek() == '=' {
+                  self.advance();
+                  self.add_token(TokenType::RightShiftEqual);
+               } else {
+                  self.add_token(TokenType::DoubleGreater);
+               }
             } else if !self.at_end() && self.peek() == '=' {
                self.advance();
                self.add_token(TokenType::GreaterOrEqual);
