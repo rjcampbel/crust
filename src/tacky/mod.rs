@@ -1,7 +1,7 @@
 pub mod tacky;
 mod tacky_printer;
 
-use crate::parser::ast::{AST, Expr, FunctionDefinition, Program, Stmt};
+use crate::parser::ast::{AST, BlockItem, Expr, FunctionDefinition, Program, Stmt};
 use crate::parser::ast;
 use tacky::*;
 use anyhow::Result;
@@ -28,26 +28,57 @@ pub fn gen_tacky(ast: &AST, print_tacky: bool) -> Result<TackyAST> {
 
 fn gen_tacky_program(ast: &AST) -> Result<TackyAST> {
     match &ast.program {
-        Program::FunctionDefinition(FunctionDefinition::Function(_name, _body)) => {
-            // let program = gen_tacky_function(name, body)?;
-            // Ok(TackyAST { program })
-            todo!()
+        Program::FunctionDefinition(FunctionDefinition::Function(name, body)) => {
+            let program = gen_tacky_function(name, body)?;
+            Ok(TackyAST { program })
         }
     }
 }
 
-fn gen_tacky_function(name: &String, stmt: &Stmt) -> Result<TackyProgram> {
+fn gen_tacky_function(name: &String, block_items: &Vec<ast::BlockItem>) -> Result<TackyProgram> {
     let mut instrs = Vec::new();
-    match &stmt {
-        Stmt::Return(expr) => {
-            gen_return_instrs(expr, &mut instrs)?;
-        },
-        _ => todo!()
+    for block_item in block_items {
+        match block_item {
+            BlockItem::Decl(decl) => {
+                generate_decl_instrs(decl, &mut instrs)?;
+            },
+            BlockItem::Stmt(stmt) => {
+                generate_stmt_instrs(stmt, &mut instrs)?;
+            }
+        }
     }
+
+    // Push a dummy return instruction in case the function doesn't have a return statement
+    instrs.push(Instr::Return(Val::Integer(0)));
+
     Ok(TackyProgram::Function {
         identifier: name.clone(),
         body: instrs,
     })
+}
+
+fn generate_decl_instrs(decl: &ast::Decl, instrs: &mut Vec<Instr>) -> Result<()> {
+    match decl {
+        ast::Decl::Decl(name, Some(expr), _) => {
+            let val = gen_expr_instrs(expr, instrs)?;
+            instrs.push(Instr::Copy { src: val, dest: Val::Var(name.clone()) });
+        },
+        _ => ()
+    }
+    Ok(())
+}
+
+fn generate_stmt_instrs(stmt: &ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> {
+    match stmt {
+        Stmt::Return(expr) => {
+            gen_return_instrs(expr, instrs)?
+        },
+        Stmt::Expression(expr) => {
+            let _ = gen_expr_instrs(expr, instrs)?;
+        },
+        Stmt::Null => ()
+    };
+    Ok(())
 }
 
 fn gen_return_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<()> {
@@ -113,7 +144,22 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             });
             Ok(dest)
         },
-        _ => todo!()
+        Expr::Var(name, _) => {
+            Ok(Val::Var(name.clone()))
+        },
+        Expr::Assignment(left, right, _) => {
+            match &**left {
+                Expr::Var(name, _) => {
+                    let right = gen_expr_instrs(&**right, instrs)?;
+                    instrs.push(Instr::Copy { src: right, dest: Val::Var(name.clone())});
+                    Ok(Val::Var(name.clone()))
+                },
+                _ => {
+                    unreachable!();
+                }
+            }
+        }
+
     }
 }
 
