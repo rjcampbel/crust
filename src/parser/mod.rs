@@ -65,6 +65,16 @@ impl TokenType {
          TokenType::DoubleEqual => Precedence::Equality,
          TokenType::BangEqual => Precedence::Equality,
          TokenType::Equal => Precedence::Assignment,
+         TokenType::PlusEqual => Precedence::Assignment,
+         TokenType::MinusEqual => Precedence::Assignment,
+         TokenType::StarEqual => Precedence::Assignment,
+         TokenType::SlashEqual => Precedence::Assignment,
+         TokenType::PercentEqual => Precedence::Assignment,
+         TokenType::AndEqual => Precedence::Assignment,
+         TokenType::OrEqual => Precedence::Assignment,
+         TokenType::XorEqual => Precedence::Assignment,
+         TokenType::LeftShiftEqual => Precedence::Assignment,
+         TokenType::RightShiftEqual => Precedence::Assignment,
          _ => Precedence::None,
       }
    }
@@ -87,7 +97,8 @@ impl TokenType {
       TokenType::Less,
       TokenType::LessOrEqual,
       TokenType::Greater,
-      TokenType::GreaterOrEqual];
+      TokenType::GreaterOrEqual,
+   ];
 
    fn to_binary_op(self) -> BinaryOp {
       match self {
@@ -125,6 +136,36 @@ impl TokenType {
          TokenType::Bang => UnaryOp::Not,
          _ => unreachable!()
       }
+   }
+
+   pub const ASSIGNMENT_OPS: &[Self] = &[
+      TokenType::Equal,
+      TokenType::PlusEqual,
+      TokenType::MinusEqual,
+      TokenType::StarEqual,
+      TokenType::SlashEqual,
+      TokenType::PercentEqual,
+      TokenType::AndEqual,
+      TokenType::OrEqual,
+      TokenType::XorEqual,
+      TokenType::LeftShiftEqual,
+      TokenType::RightShiftEqual,
+   ];
+}
+
+fn compound_to_arithmetic(t: &TokenType) -> BinaryOp {
+   match t {
+      TokenType::PlusEqual => BinaryOp::Add,
+      TokenType::MinusEqual => BinaryOp::Subtract,
+      TokenType::StarEqual => BinaryOp::Multiply,
+      TokenType::SlashEqual => BinaryOp::Divide,
+      TokenType::PercentEqual => BinaryOp::Modulus,
+      TokenType::AndEqual => BinaryOp::BitwiseAnd,
+      TokenType::OrEqual => BinaryOp::BitwiseOr,
+      TokenType::XorEqual => BinaryOp::BitwiseXor,
+      TokenType::LeftShiftEqual => BinaryOp::LeftShift,
+      TokenType::RightShiftEqual => BinaryOp::RightShift,
+      _ => unreachable!()
    }
 }
 
@@ -228,13 +269,8 @@ impl Parser {
    fn expression(&mut self, min_prec: Precedence) -> Result<Expr> {
       let mut left: Expr = self.factor()?;
 
-      while self.peek().token_type.precedence() >= min_prec && (self.match_binary_op() || self.match_token(TokenType::Equal)) {
-         if self.previous().token_type == TokenType::Equal {
-            let prec = self.previous().token_type.precedence();
-            let line_number = self.previous().line_number;
-            let right = self.expression(prec)?;
-            left = Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number);
-         } else {
+      while self.peek().token_type.precedence() >= min_prec {
+         if self.match_binary_op() {
             let operator_type = self.previous().token_type.clone();
             let line_number = self.previous().line_number;
             let next_prec = operator_type.precedence().increment();
@@ -246,9 +282,31 @@ impl Parser {
                right: Box::new(right),
                line_number
             };
+         } else if self.match_assignment_op() {
+            match self.previous().token_type {
+               TokenType::Equal => {
+                  let prec = self.previous().token_type.precedence();
+                  let line_number = self.previous().line_number;
+                  let right = self.expression(prec)?;
+                  left = Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number);
+               },
+               ref t @ _ => {
+                  let op = compound_to_arithmetic(t);
+                  left = self.compound_assignment(op, &left)?;
+               },
+            }
+         } else {
+            break;
          }
       }
       Ok(left)
+   }
+
+   fn compound_assignment(&mut self, op: BinaryOp, left: &Expr) -> Result<Expr> {
+      let line_number = self.previous().line_number;
+      let prec = self.previous().token_type.precedence();
+      let right = Expr::BinaryOp { operator: op, left: Box::new(left.clone()), right: Box::new(self.expression(prec)?), line_number };
+      Ok(Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number))
    }
 
    fn unary(&mut self) -> Result<Expr> {
@@ -299,13 +357,13 @@ impl Parser {
       bail!(error::error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), error::ErrorType::SyntaxError))
    }
 
-   fn match_token(&mut self, token_type: TokenType) -> bool {
-      if self.check(&token_type) {
-         self.advance();
-         return true;
-      }
-      false
-   }
+   // fn match_token(&mut self, token_type: TokenType) -> bool {
+   //    if self.check(&token_type) {
+   //       self.advance();
+   //       return true;
+   //    }
+   //    false
+   // }
 
    fn previous(&mut self) -> &Token {
       &self.tokens[self.current - 1]
@@ -353,4 +411,16 @@ impl Parser {
       }
       false
    }
+
+   fn match_assignment_op(&mut self) -> bool {
+      if self.at_end() {
+         return false;
+      }
+      if TokenType::ASSIGNMENT_OPS.contains(&self.peek().token_type) {
+         self.advance();
+         return true;
+      }
+      false
+   }
+
 }
