@@ -114,7 +114,7 @@ fn print_expr(expr: &Expr, indent: usize) {
          print_expr(right, indent + 2);
       },
       Expr::Assignment(left, right, _) => {
-         println!("{}Assignment: ", indent);
+         println!("{}Assignment: ", indentation);
          print_expr(left, indent + 2);
          print_expr(right, indent + 2);
       }
