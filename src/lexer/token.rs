@@ -41,6 +41,10 @@ pub enum TokenType {
    XorEqual,
    LeftShiftEqual,
    RightShiftEqual,
+   If,
+   Else,
+   Question,
+   Colon,
 
    // Keywords
    Int,
@@ -116,6 +120,10 @@ impl fmt::Display for TokenType {
          TokenType::XorEqual => write!(f, "^="),
          TokenType::LeftShiftEqual => write!(f, "<<="),
          TokenType::RightShiftEqual => write!(f, ">>="),
+         TokenType::If => write!(f, "IF"),
+         TokenType::Else => write!(f, "ELSE"),
+         TokenType::Question => write!(f, "?"),
+         TokenType::Colon => write!(f, ":"),
          TokenType::EOF => write!(f, "EOF"),
       }
    }

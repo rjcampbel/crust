@@ -183,7 +183,9 @@ impl<'a> Lexer<'a> {
             } else {
                self.add_token(TokenType::Equal);
             }
-         }
+         },
+         '?' => self.add_token(TokenType::Question),
+         ':' => self.add_token(TokenType::Colon),
          '\n'=> self.line += 1,
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,
@@ -242,12 +244,12 @@ impl<'a> Lexer<'a> {
       }
 
       let token_string = self.lexeme();
-      match token_string.as_str() {
-         "int"    => &self.add_token(TokenType::Int),
-         "void"   => &self.add_token(TokenType::Void),
-         "return" => &self.add_token(TokenType::Return),
-         _        => &self.add_token(TokenType::Identifier)
-      };
+
+      if let Some(t  @ _) = to_keyword(&token_string) {
+         self.add_token(t);
+      } else {
+         self.add_token(TokenType::Identifier);
+      }
 
       Ok(())
    }
@@ -259,4 +261,15 @@ fn is_alpha(c: char) -> bool {
 
 fn is_digit(c: char) -> bool {
    c.is_digit(10)
+}
+
+fn to_keyword(identifier: &String) -> Option<TokenType> {
+   match identifier.as_str() {
+      "int" => Some(TokenType::Int),
+      "void" => Some(TokenType::Void),
+      "return" => Some(TokenType::Return),
+      "if" => Some(TokenType::If),
+      "else" => Some(TokenType::Else),
+      _ => None
+   }
 }
