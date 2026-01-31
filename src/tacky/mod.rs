@@ -77,7 +77,19 @@ fn generate_stmt_instrs(stmt: &ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()>
             let _ = gen_expr_instrs(expr, instrs)?;
         },
         Stmt::Null => (),
-        _ => todo!()
+        Stmt::If(condition, then_stmt, else_stmt) => {
+            let end_label = gen_label("end");
+            let else_label = gen_label("else");
+            let condition: Val = gen_expr_instrs(condition, instrs)?;
+            instrs.push(Instr::JumpIfZero { condition, target: else_label.to_string() });
+            generate_stmt_instrs(then_stmt, instrs)?;
+            instrs.push(Instr::Jump(end_label.to_string()));
+            instrs.push(Instr::Label(else_label.to_string()));
+            if let Some(s) = else_stmt {
+                generate_stmt_instrs(s, instrs)?;
+            }
+            instrs.push(Instr::Label(end_label.to_string()))
+        }
     };
     Ok(())
 }
@@ -160,7 +172,22 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 }
             }
         },
-        _ => todo!()
+        Expr::Conditional(condition, middle, right) => {
+            let e2_label = gen_label("e2");
+            let end_label = gen_label("end");
+            let dest = Val::Var(name_generator::gen_tmp_name());
+
+            let condition = gen_expr_instrs(condition, instrs)?;
+            instrs.push(Instr::JumpIfZero { condition, target: e2_label.to_string() });
+            let middle = gen_expr_instrs(middle, instrs)?;
+            instrs.push(Instr::Copy { src: middle, dest: dest.clone() });
+            instrs.push(Instr::Jump(end_label.to_string()));
+            instrs.push(Instr::Label(e2_label.to_string()));
+            let right = gen_expr_instrs(right, instrs)?;
+            instrs.push(Instr::Copy { src: right, dest: dest.clone() });
+            instrs.push(Instr::Label(end_label.to_string()));
+            Ok(dest)
+        }
 
     }
 }
