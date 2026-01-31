@@ -7,10 +7,12 @@ mod tacky;
 mod validator;
 mod error;
 mod name_generator;
+mod compiler;
 
 use anyhow::Result;
 use clap::Parser;
 use std::path::{Path, PathBuf};
+use std::fs;
 
 use codegen::assembly::AssemblyAST;
 use lexer::token::Token;
@@ -69,6 +71,8 @@ fn main() -> Result<()> {
     let source = args.source;
     let pp_source = source.with_extension("i");
     preprocess(&source, &pp_source)?;
+
+
 
     if args.lex {
         let _ = lex(&pp_source, args.print_tokens)?;
@@ -135,21 +139,10 @@ fn codegen(tacky: &TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
 }
 
 fn build(source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<()> {
-    let tokens = lex(&source, print_tokens)?;
-    let ast = parse(tokens, print_ast)?;
-    let ast = validate(&ast, print_ast)?;
-    let tacky = gen_tacky(&ast, print_tacky)?;
-    let assembly_ast = codegen(&tacky, print_assembly)?;
-    let output = source.with_extension("s");
-    emit_code(&assembly_ast, &output)?;
-    assemble(&output, &source.with_extension(""))?;
+    let mut compiler = compiler::Compiler::new();
+    compiler.compile(&source, print_tokens, print_ast, print_tacky, print_assembly)?;
+    fs::remove_file(&source)?;
+    let s_source = source.with_extension("s");
+    fs::remove_file(&s_source)?;
     Ok(())
-}
-
-fn emit_code(assembly_ast: &AssemblyAST, output: &Path) -> Result<()> {
-    emitter::emit_code(&assembly_ast, output)
-}
-
-fn assemble(source: &Path, output: &Path) -> Result<()> {
-    gcc::assemble(source, output)
 }

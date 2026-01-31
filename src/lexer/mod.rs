@@ -7,8 +7,8 @@ use token::{Token, TokenType};
 use crate::error;
 
 pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
-   let source  = fs::read_to_string(source)?.chars().collect();
-   let mut lexer = Lexer::new(&source);
+   let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
+   let mut lexer = Lexer::new(source);
    lexer.lex()?;
 
    if print_tokens {
@@ -20,18 +20,28 @@ pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
    Ok(lexer.tokens)
 }
 
-struct Lexer<'a> {
-   source: &'a Vec<char>,
-   tokens: Vec<Token>,
+pub struct Lexer {
+   source: Vec<char>,
+   pub tokens: Vec<Token>,
    start: usize,
    current: usize,
    line: usize,
 }
 
-impl<'a> Lexer<'a> {
-   fn new(source: &'a Vec<char>) -> Self {
+impl Lexer {
+   pub fn new(source: Vec<char>) -> Self {
       Self {
          source,
+         tokens: Vec::new(),
+         start: 0,
+         current: 0,
+         line: 1,
+      }
+   }
+
+   pub fn new2() -> Self {
+      Self {
+         source: Vec::new(),
          tokens: Vec::new(),
          start: 0,
          current: 0,
@@ -47,6 +57,20 @@ impl<'a> Lexer<'a> {
 
       let token = Token::new(TokenType::EOF, String::from(""), self.line);
       self.tokens.push(token);
+
+      Ok(())
+   }
+
+   pub fn lex2(&mut self, source: &Path, print_tokens: bool) -> Result<()> {
+      let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
+      self.source = source.clone();
+      self.lex()?;
+
+      if print_tokens {
+         for token in &self.tokens {
+            println!("{:?}", token);
+         }
+      }
 
       Ok(())
    }
