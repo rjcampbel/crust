@@ -65,7 +65,14 @@ impl Validator {
             Ok(Stmt::Return(self.resolve_expr(&e)?))
          },
          Stmt::Null => Ok(Stmt::Null),
-         _ => todo!()
+         Stmt::If(expr, then_stmt, else_stmt) => {
+            let else_stmt = if let Some(s) = else_stmt {
+               Some(Box::new(self.resolve_statement(s)?))
+            } else {
+               None
+            };
+            Ok(Stmt::If(self.resolve_expr(expr)?, Box::new(self.resolve_statement(then_stmt)?), else_stmt))
+         }
       }
    }
 
@@ -114,7 +121,9 @@ impl Validator {
          Expr::UnaryOp { operator, expr, line_number } => {
             Ok(Expr::UnaryOp { operator: operator.clone(), expr: Box::new(self.resolve_expr(&**expr)?), line_number: *line_number })
          },
-         _ => todo!()
+         Expr::Conditional(condition, middle, right) => {
+            Ok(Expr::Conditional(Box::new(self.resolve_expr(condition)?), Box::new(self.resolve_expr(middle)?), Box::new(self.resolve_expr(right)?)))
+         }
       }
    }
 }

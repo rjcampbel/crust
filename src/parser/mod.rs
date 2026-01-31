@@ -272,11 +272,11 @@ impl Parser {
             let then_stmt = self.statement()?;
             let else_stmt = if self.peek().token_type == TokenType::Else {
                self.advance();
-               Some(self.statement()?)
+               Some(Box::new(self.statement()?))
             } else {
                None
             };
-            return Ok(Stmt::If(expr, Box::new(then_stmt), Box::new(else_stmt)));
+            return Ok(Stmt::If(expr, Box::new(then_stmt), else_stmt));
          },
          _ => {
             let expr = self.expression(Precedence::None)?;

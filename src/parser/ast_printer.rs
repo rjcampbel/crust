@@ -38,7 +38,7 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          print!("{}If ", indentation);
          print_expr(expr, 0);
          print_stmt(then, indent + 4);
-         if let Some(stmt) = &**else_stmt {
+         if let Some(stmt) = else_stmt {
             print_stmt(&stmt, indent + 4);
          }
       }

@@ -22,7 +22,7 @@ pub enum Decl {
 pub enum Stmt {
    Return(Expr),
    Expression(Expr),
-   If(Expr, Box<Stmt>, Box<Option<Stmt>>),
+   If(Expr, Box<Stmt>, Option<Box<Stmt>>),
    Null,
 }
 
