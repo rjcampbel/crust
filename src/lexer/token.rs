@@ -41,8 +41,6 @@ pub enum TokenType {
    XorEqual,
    LeftShiftEqual,
    RightShiftEqual,
-   If,
-   Else,
    Question,
    Colon,
 
@@ -50,6 +48,8 @@ pub enum TokenType {
    Int,
    Void,
    Return,
+   If,
+   Else,
 
    // Constands/Identifiers
    Integer(i64),

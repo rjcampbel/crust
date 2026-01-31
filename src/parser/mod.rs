@@ -191,7 +191,7 @@ impl Parser {
 
    fn program(&mut self) -> Result<Program> {
       let function = self.function()?;
-      ensure!(self.at_end(), "Expected end of file after function");
+      ensure!(self.at_end(), error::error(self.peek().line_number, format!("Expected end of file, found {}", self.peek().lexeme), error::ErrorType::SyntaxError));
       Ok(function)
    }
 
@@ -296,12 +296,7 @@ impl Parser {
             let next_prec = operator_type.precedence().increment();
             let binary_op = operator_type.to_binary_op();
             let right = self.expression(next_prec)?;
-            left = Expr::BinaryOp {
-               operator: binary_op,
-               left: Box::new(left.clone()),
-               right: Box::new(right),
-               line_number
-            };
+            left = Expr::BinaryOp(binary_op, Box::new(left.clone()), Box::new(right), line_number);
          } else if self.match_assignment_op() {
             match self.previous().token_type {
                TokenType::Equal => {
@@ -331,7 +326,7 @@ impl Parser {
    fn compound_assignment(&mut self, op: BinaryOp, left: &Expr) -> Result<Expr> {
       let line_number = self.previous().line_number;
       let prec = self.previous().token_type.precedence();
-      let right = Expr::BinaryOp { operator: op, left: Box::new(left.clone()), right: Box::new(self.expression(prec)?), line_number };
+      let right = Expr::BinaryOp(op, Box::new(left.clone()), Box::new(self.expression(prec)?), line_number);
       Ok(Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number))
    }
 
@@ -340,11 +335,7 @@ impl Parser {
       let line_number = self.previous().line_number;
       let unary_op = operator_type.to_unary_op();
       let expr = self.factor()?;
-      Ok(Expr::UnaryOp {
-         operator: unary_op,
-         expr: Box::new(expr),
-         line_number
-      })
+      Ok(Expr::UnaryOp(unary_op, Box::new(expr), line_number))
    }
 
    fn factor(&mut self) -> Result<Expr> {

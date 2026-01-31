@@ -12,17 +12,13 @@ impl fmt::Display for AssemblyAST {
 }
 
 pub enum AssemblyProgram {
-   Function {
-      name: String,
-      instructions: Vec<Instruction>,
-      stack_allocator: StackAllocator
-   },
+   Function(String, Vec<Instruction>, StackAllocator),
 }
 
 impl fmt::Display for AssemblyProgram {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
-         AssemblyProgram::Function { name, instructions, .. } => {
+         AssemblyProgram::Function(name, instructions, ..) => {
             writeln!(f, "\t.globl _{}", name)?;
             writeln!(f, "_{}:", name)?;
             writeln!(f, "\tpushq\t%rbp")?;
@@ -96,7 +92,6 @@ impl fmt::Display for UnaryOp {
       }
    }
 }
-
 
 #[derive(Clone)]
 pub enum BinaryOp {

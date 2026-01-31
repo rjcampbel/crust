@@ -19,18 +19,26 @@ pub enum Error {
       line: usize,
       msg: String,
    },
+
+   #[error("[line {}] Semantic Error: {}", line, msg)]
+   SemanticError {
+      line: usize,
+      msg: String,
+   }
 }
 
 pub enum ErrorType {
    InvalidToken,
    InvalidIdentifier,
    SyntaxError,
+   SemanticError,
 }
 
 pub fn error(line: usize, msg: String, err_type: ErrorType) -> Error {
    match err_type {
       ErrorType::InvalidIdentifier => Error::InvalidIdentifier { line, msg },
       ErrorType::InvalidToken => Error::InvalidToken { line, msg },
-      ErrorType::SyntaxError => Error::SyntaxError { line, msg }
+      ErrorType::SyntaxError => Error::SyntaxError { line, msg },
+      ErrorType::SemanticError => Error::SemanticError { line, msg },
    }
 }

@@ -51,17 +51,14 @@ fn gen_tacky_function(name: &String, block_items: &Vec<ast::BlockItem>) -> Resul
     // Push a dummy return instruction in case the function doesn't have a return statement
     instrs.push(Instr::Return(Val::Integer(0)));
 
-    Ok(TackyProgram::Function {
-        identifier: name.clone(),
-        body: instrs,
-    })
+    Ok(TackyProgram::Function(name.clone(), instrs))
 }
 
 fn generate_decl_instrs(decl: &ast::Decl, instrs: &mut Vec<Instr>) -> Result<()> {
     match decl {
         ast::Decl::Decl(name, Some(expr), _) => {
             let val = gen_expr_instrs(expr, instrs)?;
-            instrs.push(Instr::Copy { src: val, dest: Val::Var(name.clone()) });
+            instrs.push(Instr::Copy(val, Val::Var(name.clone())));
         },
         _ => ()
     }
@@ -81,7 +78,7 @@ fn generate_stmt_instrs(stmt: &ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()>
             let end_label = gen_label("end");
             let else_label = gen_label("else");
             let condition: Val = gen_expr_instrs(condition, instrs)?;
-            instrs.push(Instr::JumpIfZero { condition, target: else_label.to_string() });
+            instrs.push(Instr::JumpIfZero(condition, else_label.to_string()));
             generate_stmt_instrs(then_stmt, instrs)?;
             instrs.push(Instr::Jump(end_label.to_string()));
             instrs.push(Instr::Label(else_label.to_string()));
@@ -105,7 +102,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
         Expr::Integer(i, _) => {
             Ok(Val::Integer(*i))
         },
-        Expr::UnaryOp { operator, expr, ..} => {
+        Expr::UnaryOp(operator, expr, _) => {
             let src = gen_expr_instrs(expr, instrs)?;
             let dest = Val::Var(name_generator::gen_tmp_name());
             let unary_op = match operator {
@@ -113,20 +110,16 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::UnaryOp::Complement => UnaryOp::Complement,
                 ast::UnaryOp::Not => UnaryOp::Not,
             };
-            instrs.push(Instr::Unary {
-                operator: unary_op,
-                src,
-                dest: dest.clone(),
-            });
+            instrs.push(Instr::Unary(unary_op, src, dest.clone()));
             Ok(dest)
         },
-        Expr::BinaryOp { operator: ast::BinaryOp::LogicalAnd, left, right, .. } => {
+        Expr::BinaryOp(ast::BinaryOp::LogicalAnd, left, right, _) => {
             gen_logical_and(left, right, instrs)
         },
-        Expr::BinaryOp { operator: ast::BinaryOp::LogicalOr, left, right, .. } => {
+        Expr::BinaryOp(ast::BinaryOp::LogicalOr, left, right, _) => {
             gen_logical_or(left, right, instrs)
         },
-        Expr::BinaryOp { operator, left, right, .. } => {
+        Expr::BinaryOp(operator, left, right, _) => {
             let left = gen_expr_instrs(left, instrs)?;
             let right = gen_expr_instrs(right, instrs)?;
             let dest = Val::Var(name_generator::gen_tmp_name());
@@ -149,12 +142,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::BinaryOp::GreaterOrEqual => BinaryOp::GreaterOrEqual,
                 _ => bail!("Unsupported binary op")
             };
-            instrs.push(Instr::Binary {
-                operator: binary_op,
-                left,
-                right,
-                dest: dest.clone(),
-            });
+            instrs.push(Instr::Binary(binary_op, left, right, dest.clone()));
             Ok(dest)
         },
         Expr::Var(name, _) => {
@@ -164,7 +152,7 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             match &**left {
                 Expr::Var(name, _) => {
                     let right = gen_expr_instrs(&**right, instrs)?;
-                    instrs.push(Instr::Copy { src: right, dest: Val::Var(name.clone())});
+                    instrs.push(Instr::Copy(right, Val::Var(name.clone())));
                     Ok(Val::Var(name.clone()))
                 },
                 _ => {
@@ -178,13 +166,13 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             let dest = Val::Var(name_generator::gen_tmp_name());
 
             let condition = gen_expr_instrs(condition, instrs)?;
-            instrs.push(Instr::JumpIfZero { condition, target: e2_label.to_string() });
+            instrs.push(Instr::JumpIfZero(condition, e2_label.to_string()));
             let middle = gen_expr_instrs(middle, instrs)?;
-            instrs.push(Instr::Copy { src: middle, dest: dest.clone() });
+            instrs.push(Instr::Copy(middle, dest.clone()));
             instrs.push(Instr::Jump(end_label.to_string()));
             instrs.push(Instr::Label(e2_label.to_string()));
             let right = gen_expr_instrs(right, instrs)?;
-            instrs.push(Instr::Copy { src: right, dest: dest.clone() });
+            instrs.push(Instr::Copy(right, dest.clone()));
             instrs.push(Instr::Label(end_label.to_string()));
             Ok(dest)
         }
@@ -196,14 +184,14 @@ fn gen_logical_and(left: &Box<Expr>, right: &Box<Expr>, instrs: &mut Vec<Instr>)
     let left = gen_expr_instrs(left, instrs)?;
     let false_label = gen_label("false");
     let end_label = gen_label("end");
-    instrs.push(Instr::JumpIfZero { condition: left, target: false_label.to_string() });
+    instrs.push(Instr::JumpIfZero(left, false_label.to_string()));
     let right = gen_expr_instrs(right, instrs)?;
-    instrs.push(Instr::JumpIfZero { condition: right, target: false_label.to_string() });
+    instrs.push(Instr::JumpIfZero(right, false_label.to_string()));
     let dest = Val::Var(name_generator::gen_tmp_name());
-    instrs.push(Instr::Copy { src: Val::Integer(1), dest: dest.clone() });
+    instrs.push(Instr::Copy(Val::Integer(1), dest.clone()));
     instrs.push(Instr::Jump(end_label.to_string()));
     instrs.push(Instr::Label(false_label.to_string()));
-    instrs.push(Instr::Copy { src: Val::Integer(0), dest: dest.clone() });
+    instrs.push(Instr::Copy(Val::Integer(0), dest.clone()));
     instrs.push(Instr::Label(end_label.to_string()));
     Ok(dest)
 }
@@ -212,14 +200,14 @@ fn gen_logical_or(left: &Box<Expr>, right: &Box<Expr>, instrs: &mut Vec<Instr>) 
     let left = gen_expr_instrs(left, instrs)?;
     let true_label = gen_label("true");
     let end_label = gen_label("end");
-    instrs.push(Instr::JumpIfNotZero { condition: left, target: true_label.to_string() });
+    instrs.push(Instr::JumpIfNotZero(left, true_label.to_string()));
     let right = gen_expr_instrs(right, instrs)?;
-    instrs.push(Instr::JumpIfNotZero { condition: right, target: true_label.to_string() });
+    instrs.push(Instr::JumpIfNotZero(right, true_label.to_string()));
     let dest = Val::Var(name_generator::gen_tmp_name());
-    instrs.push(Instr::Copy { src: Val::Integer(0), dest: dest.clone() });
+    instrs.push(Instr::Copy(Val::Integer(0), dest.clone()));
     instrs.push(Instr::Jump(end_label.to_string()));
     instrs.push(Instr::Label(true_label.to_string()));
-    instrs.push(Instr::Copy { src: Val::Integer(1), dest: dest.clone() });
+    instrs.push(Instr::Copy(Val::Integer(1), dest.clone()));
     instrs.push(Instr::Label(end_label.to_string()));
     Ok(dest)
 }

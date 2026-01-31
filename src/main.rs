@@ -115,8 +115,7 @@ fn preprocess(source: &Path, dest: &Path) -> Result<()> {
 }
 
 fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
-    let tokens = lexer::lex(&source, print_tokens)?;
-    Ok(tokens)
+    lexer::lex(&source, print_tokens)
 }
 
 fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {

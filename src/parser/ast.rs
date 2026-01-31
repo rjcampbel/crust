@@ -30,17 +30,8 @@ pub enum Stmt {
 pub enum Expr {
    Integer(i64, usize),
    Var(String, usize),
-   UnaryOp {
-      operator: UnaryOp,
-      expr: Box<Expr>,
-      line_number: usize,
-   },
-   BinaryOp {
-      operator: BinaryOp,
-      left: Box<Expr>,
-      right: Box<Expr>,
-      line_number: usize,
-   },
+   UnaryOp(UnaryOp, Box<Expr>, usize),
+   BinaryOp(BinaryOp, Box<Expr>, Box<Expr>, usize),
    Assignment(Box<Expr>, Box<Expr>, usize),
    Conditional(Box<Expr>, Box<Expr>, Box<Expr>)
 }

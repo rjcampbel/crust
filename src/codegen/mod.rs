@@ -18,7 +18,7 @@ pub fn codegen(tacky: &tacky::TackyAST, print_assembly: bool) -> Result<Assembly
 
 fn generate_assembly(tacky: &tacky::TackyAST) -> Result<AssemblyAST> {
    let mut assembly = match &tacky.program {
-      tacky::TackyProgram::Function { identifier, body }=> {
+      tacky::TackyProgram::Function(identifier, body)=> {
          let function = generate_function(&identifier, &body)?;
          Ok(AssemblyAST { program: function })
       }
@@ -33,11 +33,7 @@ fn generate_assembly(tacky: &tacky::TackyAST) -> Result<AssemblyAST> {
 
 fn generate_function(name: &String, instrs: &Vec<tacky::Instr>) -> Result<AssemblyProgram> {
    let instructions = generate_instructions(instrs)?;
-   let assembly_function = AssemblyProgram::Function {
-      name: name.clone(),
-      instructions,
-      stack_allocator: StackAllocator::new(),
-   };
+   let assembly_function = AssemblyProgram::Function(name.clone(), instructions, StackAllocator::new());
    Ok(assembly_function)
 }
 
@@ -50,12 +46,12 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
             instructions.push(Instruction::Mov(ret, Operand::Register(Register::AX)));
             instructions.push(Instruction::Return);
          },
-         tacky::Instr::Unary { operator: tacky::UnaryOp::Not, src, dest } => {
+         tacky::Instr::Unary(tacky::UnaryOp::Not, src, dest) => {
             instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(src)));
             instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest)));
             instructions.push(Instruction::SetCC(ConditionCode::E, generate_operand(dest)));
          },
-         tacky::Instr::Unary { operator, src, dest } => {
+         tacky::Instr::Unary(operator, src, dest) => {
             let src = generate_operand(src);
             let dst = generate_operand(dest);
             let op = match operator {
@@ -70,11 +66,11 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
             instructions.push(Instruction::Mov(src, dst.clone()));
             instructions.push(Instruction::Unary(op, dst));
          },
-         tacky::Instr::Binary { operator: tacky::BinaryOp::Equal | tacky::BinaryOp::NotEqual | tacky::BinaryOp::LessThan | tacky::BinaryOp::LessOrEqual | tacky::BinaryOp::GreaterThan | tacky::BinaryOp::GreaterOrEqual, left, right, dest } => {
+         tacky::Instr::Binary(tacky::BinaryOp::Equal | tacky::BinaryOp::NotEqual | tacky::BinaryOp::LessThan | tacky::BinaryOp::LessOrEqual | tacky::BinaryOp::GreaterThan | tacky::BinaryOp::GreaterOrEqual, left, right, dest) => {
             instructions.push(Instruction::Cmp(generate_operand(right), generate_operand(left)));
             instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest)));
             let code = match &instr {
-               tacky::Instr::Binary { operator, .. } => match operator {
+               tacky::Instr::Binary(operator, ..) => match operator {
                   tacky::BinaryOp::Equal => ConditionCode::E,
                   tacky::BinaryOp::NotEqual => ConditionCode::NE,
                   tacky::BinaryOp::LessThan => ConditionCode::L,
@@ -87,7 +83,7 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
             };
             instructions.push(Instruction::SetCC(code, generate_operand(dest)));
          },
-         tacky::Instr::Binary { operator, left, right, dest } => {
+         tacky::Instr::Binary(operator, left, right, dest) => {
             let left = generate_operand(left);
             let right = generate_operand(right);
             let dst = generate_operand(dest);
@@ -142,15 +138,15 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
          tacky::Instr::Jump(label) => {
             instructions.push(Instruction::Jmp(label.clone()));
          },
-         tacky::Instr::JumpIfNotZero { condition, target } => {
+         tacky::Instr::JumpIfNotZero(condition, target) => {
             instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition)));
             instructions.push(Instruction::JmpCC(ConditionCode::NE, target.clone()));
          },
-         tacky::Instr::JumpIfZero { condition, target } => {
+         tacky::Instr::JumpIfZero(condition, target) => {
             instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition)));
             instructions.push(Instruction::JmpCC(ConditionCode::E, target.clone()));
          },
-         tacky::Instr::Copy { src, dest } => {
+         tacky::Instr::Copy(src, dest) => {
             instructions.push(Instruction::Mov(generate_operand(src), generate_operand(dest)));
          },
          tacky::Instr::Label(label) => {
@@ -170,7 +166,7 @@ fn generate_operand(val: &tacky::Val) -> Operand {
 
 fn replace_pseudoregisters(assembly: &mut AssemblyAST) {
    match &mut assembly.program {
-      AssemblyProgram::Function { instructions, stack_allocator , .. } => {
+      AssemblyProgram::Function(_, instructions, stack_allocator) => {
          for instr in instructions {
             match instr {
                Instruction::Mov(src, dst) => {
@@ -211,7 +207,7 @@ fn replace_pseudoregisters(assembly: &mut AssemblyAST) {
 
 fn fixup_instructions(assembly: &mut AssemblyAST) {
    match &mut assembly.program {
-      AssemblyProgram::Function { instructions, stack_allocator , .. } => {
+      AssemblyProgram::Function(_, instructions, stack_allocator) => {
          let stack_size = stack_allocator.get();
          let mut new_instructions = Vec::new();
          new_instructions.push(Instruction::AllocateStack(stack_size));

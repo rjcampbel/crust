@@ -3,38 +3,17 @@ pub struct TackyAST {
 }
 
 pub enum TackyProgram {
-   Function {
-      identifier: String,
-      body: Vec<Instr>,
-   }
+   Function(String, Vec<Instr>)
 }
 
 pub enum Instr {
    Return(Val),
-   Unary {
-      operator: UnaryOp,
-      src: Val,
-      dest: Val,
-   },
-   Binary {
-      operator: BinaryOp,
-      left: Val,
-      right: Val,
-      dest: Val,
-   },
-   Copy {
-      src: Val,
-      dest: Val,
-   },
+   Unary(UnaryOp, Val, Val),
+   Binary(BinaryOp, Val, Val, Val),
+   Copy(Val, Val),
    Jump(String),
-   JumpIfZero {
-      condition: Val,
-      target: String,
-   },
-   JumpIfNotZero {
-      condition: Val,
-      target: String,
-   },
+   JumpIfZero(Val, String),
+   JumpIfNotZero(Val, String),
    Label(String),
 }
 

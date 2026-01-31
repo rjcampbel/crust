@@ -54,7 +54,7 @@ fn print_expr(expr: &Expr, indent: usize) {
       Expr::Var(identifier, _) => {
          println!("{}Identifier: {}", indentation, identifier);
       }
-      Expr::UnaryOp { operator, expr, .. } => {
+      Expr::UnaryOp(operator, expr, _) => {
          match operator {
             UnaryOp::Complement => {
                println!("{}UnaryOp: Complement", indentation);
@@ -68,7 +68,7 @@ fn print_expr(expr: &Expr, indent: usize) {
          }
          print_expr(expr, indent + 2);
       },
-      Expr::BinaryOp { operator, left, right, .. } => {
+      Expr::BinaryOp(operator, left, right, _) => {
          match operator {
             BinaryOp::Add => {
                println!("{}BinaryOp: Add", indentation);
