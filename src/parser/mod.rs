@@ -12,6 +12,7 @@ use crate::error;
 enum Precedence {
    None,
    Assignment,
+   Ternary,
    LogicalOr,
    LogicalAnd,
    BitwiseOr,
@@ -75,6 +76,7 @@ impl TokenType {
          TokenType::XorEqual => Precedence::Assignment,
          TokenType::LeftShiftEqual => Precedence::Assignment,
          TokenType::RightShiftEqual => Precedence::Assignment,
+         TokenType::Question => Precedence::Ternary,
          _ => Precedence::None,
       }
    }
@@ -219,7 +221,7 @@ impl Parser {
          TokenType::Int => {
             self.declaration()
          },
-         _ => self.statement()
+         _ => Ok(BlockItem::Stmt(self.statement()?))
       }
    }
 
@@ -250,19 +252,37 @@ impl Parser {
       }
    }
 
-   fn statement(&mut self) -> Result<BlockItem> {
-      if self.peek().token_type == TokenType::Return {
-         self.advance();
-         let expr = self.expression(Precedence::None)?;
-         self.consume(TokenType::Semicolon)?;
-         return Ok(BlockItem::Stmt(Stmt::Return(expr)))
-      } else if self.peek().token_type == TokenType::Semicolon {
-         self.advance();
-         return Ok(BlockItem::Stmt(Stmt::Null));
-      } else {
-         let expr = self.expression(Precedence::None)?;
-         self.consume(TokenType::Semicolon)?;
-         return Ok(BlockItem::Stmt(Stmt::Expression(expr)));
+   fn statement(&mut self) -> Result<Stmt> {
+      match self.peek().token_type {
+         TokenType::Return => {
+            self.advance();
+            let expr = self.expression(Precedence::None)?;
+            self.consume(TokenType::Semicolon)?;
+            return Ok(Stmt::Return(expr))
+         },
+         TokenType::Semicolon => {
+            self.advance();
+            return Ok(Stmt::Null);
+         },
+         TokenType::If => {
+            self.advance();
+            self.consume(TokenType::OpenParen)?;
+            let expr = self.expression(Precedence::None)?;
+            self.consume(TokenType::CloseParen)?;
+            let then_stmt = self.statement()?;
+            let else_stmt = if self.peek().token_type == TokenType::Else {
+               self.advance();
+               Some(self.statement()?)
+            } else {
+               None
+            };
+            return Ok(Stmt::If(expr, Box::new(then_stmt), Box::new(else_stmt)));
+         },
+         _ => {
+            let expr = self.expression(Precedence::None)?;
+            self.consume(TokenType::Semicolon)?;
+            return Ok(Stmt::Expression(expr));
+         }
       }
    }
 
@@ -295,6 +315,12 @@ impl Parser {
                   left = self.compound_assignment(op, &left)?;
                },
             }
+         } else if self.match_token(TokenType::Question) {
+            let prec = self.previous().token_type.precedence();
+            let middle = self.expression(Precedence::None)?;
+            self.consume(TokenType::Colon)?;
+            let right = self.expression(prec)?;
+            left = Expr::Conditional(Box::new(left.clone()), Box::new(middle), Box::new(right));
          } else {
             break;
          }
@@ -357,13 +383,13 @@ impl Parser {
       bail!(error::error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), error::ErrorType::SyntaxError))
    }
 
-   // fn match_token(&mut self, token_type: TokenType) -> bool {
-   //    if self.check(&token_type) {
-   //       self.advance();
-   //       return true;
-   //    }
-   //    false
-   // }
+   fn match_token(&mut self, token_type: TokenType) -> bool {
+      if self.check(&token_type) {
+         self.advance();
+         return true;
+      }
+      false
+   }
 
    fn previous(&mut self) -> &Token {
       &self.tokens[self.current - 1]

@@ -7,24 +7,39 @@ pub fn print_ast(ast: &AST) {
          println!("Function: {}", name);
          for item in body {
             match item {
-               BlockItem::Stmt(Stmt::Return(expr)) => {
-                  println!("  Return:");
-                  print_expr(expr, 4);
-               },
-               BlockItem::Stmt(Stmt::Expression(expr)) => {
-                  println!("  Expression:");
-                  print_expr(expr, 4);
-               },
-               BlockItem::Stmt(Stmt::Null) => {
-                  println!("  NULL");
-               },
+               BlockItem::Stmt(s) => print_stmt(s, 0),
                BlockItem::Decl(Decl::Decl(name, expr, _)) => {
-                  println!("  Decl: {}", name);
+                  println!("Decl: {}", name);
                   if let Some(e) = expr {
                      print_expr(e, 4);
                   }
                }
             }
+         }
+      }
+   }
+}
+
+fn print_stmt(stmt: &Stmt, indent: usize) {
+   let indentation = " ".repeat(indent);
+   match stmt {
+      Stmt::Return(expr) => {
+         println!("{}Return:", indentation);
+         print_expr(expr, indent + 4);
+      },
+      Stmt::Expression(expr) => {
+         println!("{}Expression:", indentation);
+         print_expr(expr, indent + 4);
+      },
+      Stmt::Null => {
+         println!("{}NULL", indentation);
+      },
+      Stmt::If(expr, then, else_stmt) => {
+         print!("{}If ", indentation);
+         print_expr(expr, 0);
+         print_stmt(then, indent + 4);
+         if let Some(stmt) = &**else_stmt {
+            print_stmt(&stmt, indent + 4);
          }
       }
    }
@@ -110,13 +125,19 @@ fn print_expr(expr: &Expr, indent: usize) {
                println!("{}BinaryOp: GreaterOrEqual", indentation);
             },
          }
-         print_expr(left, indent + 2);
-         print_expr(right, indent + 2);
+         print_expr(left, indent + 4);
+         print_expr(right, indent + 4);
       },
       Expr::Assignment(left, right, _) => {
          println!("{}Assignment: ", indentation);
-         print_expr(left, indent + 2);
-         print_expr(right, indent + 2);
+         print_expr(left, indent + 4);
+         print_expr(right, indent + 4);
+      },
+      Expr::Conditional(condition, true_expr, false_expr) => {
+         println!("{}Conditional:", indentation);
+         print_expr(condition, indent + 4);
+         print_expr(true_expr, indent + 4);
+         print_expr(false_expr, indent + 4);
       }
    }
 }

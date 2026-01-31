@@ -22,6 +22,7 @@ pub enum Decl {
 pub enum Stmt {
    Return(Expr),
    Expression(Expr),
+   If(Expr, Box<Stmt>, Box<Option<Stmt>>),
    Null,
 }
 
@@ -41,6 +42,7 @@ pub enum Expr {
       line_number: usize,
    },
    Assignment(Box<Expr>, Box<Expr>, usize),
+   Conditional(Box<Expr>, Box<Expr>, Box<Expr>)
 }
 
 #[derive(Clone)]

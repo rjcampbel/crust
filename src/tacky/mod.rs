@@ -76,7 +76,8 @@ fn generate_stmt_instrs(stmt: &ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()>
         Stmt::Expression(expr) => {
             let _ = gen_expr_instrs(expr, instrs)?;
         },
-        Stmt::Null => ()
+        Stmt::Null => (),
+        _ => todo!()
     };
     Ok(())
 }
@@ -158,7 +159,8 @@ fn gen_expr_instrs(expr: &Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                     unreachable!();
                 }
             }
-        }
+        },
+        _ => todo!()
 
     }
 }

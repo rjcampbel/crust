@@ -64,7 +64,8 @@ impl Validator {
          Stmt::Return(e) => {
             Ok(Stmt::Return(self.resolve_expr(&e)?))
          },
-         Stmt::Null => Ok(Stmt::Null)
+         Stmt::Null => Ok(Stmt::Null),
+         _ => todo!()
       }
    }
 
@@ -112,7 +113,8 @@ impl Validator {
          },
          Expr::UnaryOp { operator, expr, line_number } => {
             Ok(Expr::UnaryOp { operator: operator.clone(), expr: Box::new(self.resolve_expr(&**expr)?), line_number: *line_number })
-         }
+         },
+         _ => todo!()
       }
    }
 }
