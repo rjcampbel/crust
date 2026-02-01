@@ -14,11 +14,6 @@ use clap::Parser;
 use std::path::{Path, PathBuf};
 use std::fs;
 
-use codegen::assembly::AssemblyAST;
-use lexer::token::Token;
-use parser::ast::AST;
-use tacky::tacky::TackyAST;
-
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;
@@ -72,40 +67,33 @@ fn main() -> Result<()> {
     let pp_source = source.with_extension("i");
     preprocess(&source, &pp_source)?;
 
-
-
     if args.lex {
-        let _ = lex(&pp_source, args.print_tokens)?;
+        let mut compiler = compiler::Compiler::new();
+        compiler.lex(&pp_source, args.print_tokens)?;
         return Ok(());
     }
 
     if args.parse {
-        let tokens = lex(&pp_source, args.print_tokens)?;
-        let _ = parse(tokens, args.print_ast)?;
+        let mut compiler = compiler::Compiler::new();
+        compiler.parse(&pp_source, args.print_tokens, args.print_ast)?;
         return Ok(());
     }
 
     if args.validate {
-        let tokens = lex(&pp_source, args.print_tokens)?;
-        let ast = parse(tokens, args.print_ast)?;
-        let _ = validate(&ast, args.print_ast)?;
+        let mut compiler = compiler::Compiler::new();
+        compiler.validate(&pp_source, args.print_tokens, args.print_ast)?;
         return Ok(());
     }
 
     if args.tacky {
-        let tokens = lex(&pp_source, args.print_tokens)?;
-        let ast = parse(tokens, args.print_ast)?;
-        let ast = validate(&ast, args.print_ast)?;
-        let _ = gen_tacky(&ast, args.print_tacky)?;
+        let mut compiler = compiler::Compiler::new();
+        compiler.tacky(&pp_source, args.print_tokens, args.print_ast, args.print_tacky)?;
         return Ok(());
     }
 
     if args.codegen {
-        let tokens = lex(&pp_source, args.print_tokens)?;
-        let ast = parse(tokens, args.print_ast)?;
-        let ast = validate(&ast, args.print_ast)?;
-        let tacky = gen_tacky(&ast, args.print_tacky)?;
-        let _ = codegen(&tacky, args.print_assembly)?;
+        let mut compiler = compiler::Compiler::new();
+        compiler.codegen(&pp_source, args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
         return Ok(());
     }
 
@@ -116,26 +104,6 @@ fn main() -> Result<()> {
 
 fn preprocess(source: &Path, dest: &Path) -> Result<()> {
     gcc::preprocess(source, dest)
-}
-
-fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
-    lexer::lex(&source, print_tokens)
-}
-
-fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
-    parser::parse(tokens, print_ast)
-}
-
-fn validate(ast: &AST, print_ast: bool) -> Result<AST> {
-    validator::validate(&ast, print_ast)
-}
-
-fn gen_tacky(ast: &AST, print_tacky: bool) -> Result<TackyAST> {
-    tacky::gen_tacky(ast, print_tacky)
-}
-
-fn codegen(tacky: &TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
-    codegen::codegen(tacky, print_assembly)
 }
 
 fn build(source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<()> {

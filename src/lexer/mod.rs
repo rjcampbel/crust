@@ -6,20 +6,6 @@ use std::path::Path;
 use token::{Token, TokenType};
 use crate::error;
 
-pub fn lex(source: &Path, print_tokens: bool) -> Result<Vec<Token>> {
-   let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
-   let mut lexer = Lexer::new(source);
-   lexer.lex()?;
-
-   if print_tokens {
-      for token in &lexer.tokens {
-         println!("{:?}", token);
-      }
-   }
-
-   Ok(lexer.tokens)
-}
-
 pub struct Lexer {
    source: Vec<char>,
    pub tokens: Vec<Token>,
@@ -29,16 +15,6 @@ pub struct Lexer {
 }
 
 impl Lexer {
-   pub fn new(source: Vec<char>) -> Self {
-      Self {
-         source,
-         tokens: Vec::new(),
-         start: 0,
-         current: 0,
-         line: 1,
-      }
-   }
-
    pub fn new2() -> Self {
       Self {
          source: Vec::new(),
