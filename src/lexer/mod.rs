@@ -15,7 +15,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-   pub fn new2() -> Self {
+   pub fn new() -> Self {
       Self {
          source: Vec::new(),
          tokens: Vec::new(),
@@ -25,7 +25,10 @@ impl Lexer {
       }
    }
 
-   fn lex(&mut self) -> Result<()> {
+   pub fn lex(&mut self, source: &PathBuf, print_tokens: bool) -> Result<()> {
+      let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
+      self.source = source.clone();
+
       while !self.at_end() {
          self.start = self.current;
          self.scan_token()?;
@@ -33,14 +36,6 @@ impl Lexer {
 
       let token = Token::new(TokenType::EOF, String::from(""), self.line);
       self.tokens.push(token);
-
-      Ok(())
-   }
-
-   pub fn lex2(&mut self, source: &PathBuf, print_tokens: bool) -> Result<()> {
-      let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
-      self.source = source.clone();
-      self.lex()?;
 
       if print_tokens {
          for token in &self.tokens {

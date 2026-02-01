@@ -17,16 +17,16 @@ pub struct Compiler {
 impl Compiler {
    pub fn new() -> Self {
       Self {
-         lexer: Lexer::new2(),
-         parser: Parser::new2(),
+         lexer: Lexer::new(),
+         parser: Parser::new(),
       }
    }
 
    pub fn compile(&mut self, source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<()> {
       let source = self.preprocess(source)?;
-      self.lexer.lex2(&source, print_tokens)?;
+      self.lexer.lex(&source, print_tokens)?;
       fs::remove_file(&source)?;
-      let ast = self.parser.parse2(&self.lexer.tokens, print_ast)?;
+      let ast = self.parser.parse(&self.lexer.tokens, print_ast)?;
       let ast = validator::validate(&ast, print_ast)?;
       let tacky = tacky::gen_tacky(&ast, print_tacky)?;
       let assembly_ast = codegen::codegen(&tacky, print_assembly)?;
@@ -39,32 +39,32 @@ impl Compiler {
 
    pub fn lex(&mut self, source: &Path, print_tokens: bool) -> Result<()> {
       let source = self.preprocess(source)?;
-      self.lexer.lex2(&source, print_tokens)?;
+      self.lexer.lex(&source, print_tokens)?;
       Ok(fs::remove_file(&source)?)
    }
 
    pub fn parse(&mut self, source: &Path, print_tokens: bool, print_ast: bool) -> Result<()> {
       let source = self.preprocess(source)?;
-      self.lexer.lex2(&source, print_tokens)?;
+      self.lexer.lex(&source, print_tokens)?;
       fs::remove_file(&source)?;
-      let _ = self.parser.parse2(&self.lexer.tokens, print_ast)?;
+      let _ = self.parser.parse(&self.lexer.tokens, print_ast)?;
       Ok(())
    }
 
    pub fn validate(&mut self, source: &Path, print_tokens: bool, print_ast: bool) -> Result<()> {
       let source = self.preprocess(source)?;
-      self.lexer.lex2(&source, print_tokens)?;
+      self.lexer.lex(&source, print_tokens)?;
       fs::remove_file(&source)?;
-      let ast = self.parser.parse2(&self.lexer.tokens, print_ast)?;
+      let ast = self.parser.parse(&self.lexer.tokens, print_ast)?;
       let _ = validator::validate(&ast, print_ast)?;
       Ok(())
    }
 
    pub fn tacky(&mut self, source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool) -> Result<()> {
       let source = self.preprocess(source)?;
-      self.lexer.lex2(&source, print_tokens)?;
+      self.lexer.lex(&source, print_tokens)?;
       fs::remove_file(&source)?;
-      let ast = self.parser.parse2(&self.lexer.tokens, print_ast)?;
+      let ast = self.parser.parse(&self.lexer.tokens, print_ast)?;
       let ast = validator::validate(&ast, print_ast)?;
       let _ = tacky::gen_tacky(&ast, print_tacky)?;
       Ok(())
@@ -72,9 +72,9 @@ impl Compiler {
 
    pub fn codegen(&mut self, source: &Path, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<()> {
       let source = self.preprocess(source)?;
-      self.lexer.lex2(&source, print_tokens)?;
+      self.lexer.lex(&source, print_tokens)?;
       fs::remove_file(&source)?;
-      let ast = self.parser.parse2(&self.lexer.tokens, print_ast)?;
+      let ast = self.parser.parse(&self.lexer.tokens, print_ast)?;
       let ast = validator::validate(&ast, print_ast)?;
       let tacky = tacky::gen_tacky(&ast, print_tacky)?;
       let _ = codegen::codegen(&tacky, print_assembly)?;

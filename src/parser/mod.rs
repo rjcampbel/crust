@@ -168,14 +168,14 @@ pub struct Parser {
 }
 
 impl Parser {
-   pub fn new2() -> Self {
+   pub fn new() -> Self {
       Self {
          tokens: Vec::new(),
          current: 0,
       }
    }
 
-   pub fn parse2(&mut self, tokens: &Vec<Token>, print_ast: bool) -> Result<AST> {
+   pub fn parse(&mut self, tokens: &Vec<Token>, print_ast: bool) -> Result<AST> {
       self.tokens = tokens.clone();
       let program = self.program()?;
       let ast = AST { program };
