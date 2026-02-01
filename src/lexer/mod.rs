@@ -2,7 +2,7 @@ pub mod token;
 
 use anyhow::{bail, Result};
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 use token::{Token, TokenType};
 use crate::error;
 
@@ -37,7 +37,7 @@ impl Lexer {
       Ok(())
    }
 
-   pub fn lex2(&mut self, source: &Path, print_tokens: bool) -> Result<()> {
+   pub fn lex2(&mut self, source: &PathBuf, print_tokens: bool) -> Result<()> {
       let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
       self.source = source.clone();
       self.lex()?;
