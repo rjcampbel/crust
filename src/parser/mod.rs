@@ -163,21 +163,25 @@ fn compound_to_arithmetic(t: &TokenType) -> BinaryOp {
    }
 }
 
-pub struct Parser {
+struct Parser {
    tokens: Vec<Token>,
    current: usize,
 }
 
+pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
+   let mut parser = Parser::new(tokens);
+   Ok(parser.parse(print_ast)?)
+}
+
 impl Parser {
-   pub fn new() -> Self {
+   pub fn new(tokens: Vec<Token>) -> Self {
       Self {
-         tokens: Vec::new(),
+         tokens,
          current: 0,
       }
    }
 
-   pub fn parse(&mut self, tokens: &Vec<Token>, print_ast: bool) -> Result<AST> {
-      self.tokens = tokens.clone();
+   pub fn parse(&mut self, print_ast: bool) -> Result<AST> {
       let program = self.program()?;
       let ast = AST { program };
       if print_ast {

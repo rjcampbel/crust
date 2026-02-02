@@ -5,12 +5,18 @@ use crate::error;
 use anyhow::{bail, Result};
 use token::{Token, TokenType};
 
-pub struct Lexer<'a> {
+struct Lexer<'a> {
    source: &'a String,
-   pub tokens: Vec<Token>,
+   tokens: Vec<Token>,
    start: usize,
    current: usize,
    line: usize,
+}
+
+pub fn lex(source: &String, print_tokens: bool) -> Result<Vec<Token>> {
+   let mut lexer = Lexer::new(source);
+   lexer.lex(print_tokens)?;
+   Ok(lexer.tokens)
 }
 
 impl<'a> Lexer<'a> {

@@ -9,6 +9,8 @@ mod parser;
 mod tacky;
 mod validator;
 
+use compiler::Compiler;
+
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -62,35 +64,34 @@ struct Cli {
 
 fn main() -> Result<()> {
     let args = Cli::parse();
-    let source = args.source;
-    let mut compiler = compiler::Compiler::new();
+    let mut compiler = Compiler::new(args.source)?;
 
     if args.lex {
-        compiler.lex(&source, args.print_tokens)?;
+        compiler.lex(args.print_tokens)?;
         return Ok(());
     }
 
     if args.parse {
-        compiler.parse(&source, args.print_tokens, args.print_ast)?;
+        compiler.parse(args.print_tokens, args.print_ast)?;
         return Ok(());
     }
 
     if args.validate {
-        compiler.validate(&source, args.print_tokens, args.print_ast)?;
+        compiler.validate(args.print_tokens, args.print_ast)?;
         return Ok(());
     }
 
     if args.tacky {
-        compiler.tacky(&source, args.print_tokens, args.print_ast, args.print_tacky)?;
+        compiler.tacky(args.print_tokens, args.print_ast, args.print_tacky)?;
         return Ok(());
     }
 
     if args.codegen {
-        compiler.codegen(&source, args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
+        compiler.codegen(args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
         return Ok(());
     }
 
-    compiler.compile(&source, args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
+    compiler.compile(args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
 
     Ok(())
 }
