@@ -1,6 +1,6 @@
-use std::process::Command;
 use anyhow::{Result, ensure};
 use std::path::Path;
+use std::process::Command;
 
 pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
    let output = Command::new("gcc")

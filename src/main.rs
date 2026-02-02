@@ -1,13 +1,13 @@
 mod codegen;
+mod compiler;
 mod emitter;
+mod error;
 mod gcc;
 mod lexer;
+mod name_generator;
 mod parser;
 mod tacky;
 mod validator;
-mod error;
-mod name_generator;
-mod compiler;
 
 use anyhow::Result;
 use clap::Parser;

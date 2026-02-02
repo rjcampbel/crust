@@ -1,23 +1,22 @@
 pub mod token;
 
-use anyhow::{bail, Result};
-use std::fs;
-use std::path::PathBuf;
-use token::{Token, TokenType};
 use crate::error;
 
-pub struct Lexer {
-   source: Vec<char>,
+use anyhow::{bail, Result};
+use token::{Token, TokenType};
+
+pub struct Lexer<'a> {
+   source: &'a String,
    pub tokens: Vec<Token>,
    start: usize,
    current: usize,
    line: usize,
 }
 
-impl Lexer {
-   pub fn new() -> Self {
+impl<'a> Lexer<'a> {
+   pub fn new(source: &'a String) -> Self {
       Self {
-         source: Vec::new(),
+         source,
          tokens: Vec::new(),
          start: 0,
          current: 0,
@@ -25,10 +24,7 @@ impl Lexer {
       }
    }
 
-   pub fn lex(&mut self, source: &PathBuf, print_tokens: bool) -> Result<()> {
-      let source: Vec<char> = fs::read_to_string(source)?.chars().collect();
-      self.source = source.clone();
-
+   pub fn lex(&mut self, print_tokens: bool) -> Result<()> {
       while !self.at_end() {
          self.start = self.current;
          self.scan_token()?;
@@ -192,27 +188,28 @@ impl Lexer {
    }
 
    fn add_token(&mut self, token_type: TokenType) {
+      let line_number = self.line;
       let lexeme = self.lexeme();
-      let token = Token::new(token_type, lexeme, self.line);
+      let token = Token::new(token_type, lexeme.to_string(), line_number);
       self.tokens.push(token);
    }
 
    fn advance(&mut self) -> char {
-      let c = self.source[self.current];
+      let c = self.source.chars().nth(self.current);
       self.current += 1;
-      c
+      c.unwrap()
    }
 
    fn peek(&self) -> char {
-      self.source[self.current]
+      self.source.chars().nth(self.current).unwrap()
    }
 
    fn at_end(&self) -> bool {
       self.current >= self.source.len()
    }
 
-   fn lexeme(&self) -> String {
-      self.source[self.start..self.current].iter().collect()
+   fn lexeme(&self) -> &str {
+      &self.source.as_str()[self.start..self.current]
    }
 
    fn number(&mut self) -> Result<()> {
@@ -224,7 +221,7 @@ impl Lexer {
          while !self.at_end() && (is_alpha(self.peek()) || is_digit(self.peek())) {
             self.advance();
          }
-         bail!(error::error(self.line, self.lexeme(), error::ErrorType::InvalidIdentifier))
+         bail!(error::error(self.line, self.lexeme().to_string(), error::ErrorType::InvalidIdentifier))
       }
 
       let token_string = self.lexeme();
@@ -258,8 +255,8 @@ fn is_digit(c: char) -> bool {
    c.is_digit(10)
 }
 
-fn to_keyword(identifier: &String) -> Option<TokenType> {
-   match identifier.as_str() {
+fn to_keyword(identifier: &str) -> Option<TokenType> {
+   match identifier {
       "int" => Some(TokenType::Int),
       "void" => Some(TokenType::Void),
       "return" => Some(TokenType::Return),

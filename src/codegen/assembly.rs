@@ -1,4 +1,5 @@
 use super::stack_allocator::StackAllocator;
+
 use std::fmt;
 
 pub struct AssemblyAST {

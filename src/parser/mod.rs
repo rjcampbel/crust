@@ -1,11 +1,12 @@
 pub mod ast;
 pub mod ast_printer;
 
-use anyhow::{bail, ensure, Result};
+use crate::error;
 use crate::lexer::token::{Token, TokenType};
+
+use anyhow::{bail, ensure, Result};
 use ast::*;
 use num::traits::FromPrimitive;
-use crate::error;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
 #[repr(u8)]

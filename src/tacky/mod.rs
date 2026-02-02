@@ -1,13 +1,14 @@
 pub mod tacky;
 mod tacky_printer;
 
-use crate::parser::ast::{AST, BlockItem, Expr, FunctionDefinition, Program, Stmt};
-use crate::parser::ast;
-use tacky::*;
-use anyhow::Result;
-use anyhow::bail;
-use std::sync::atomic::{Ordering, AtomicUsize};
 use crate::name_generator;
+use crate::parser::ast;
+use crate::parser::ast::{AST, BlockItem, Expr, FunctionDefinition, Program, Stmt};
+use tacky::*;
+
+use anyhow::bail;
+use anyhow::Result;
+use std::sync::atomic::{Ordering, AtomicUsize};
 
 static LBL_COUNTER: AtomicUsize = AtomicUsize::new(0);
 

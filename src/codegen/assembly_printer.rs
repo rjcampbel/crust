@@ -1,4 +1,4 @@
-use crate::codegen::assembly::*;
+use super::assembly::*;
 
 pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
    match &assembly_ast.program {

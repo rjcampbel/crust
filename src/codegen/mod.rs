@@ -2,9 +2,10 @@ pub mod assembly;
 mod assembly_printer;
 mod stack_allocator;
 
+use crate::codegen::assembly::*;
 use crate::tacky::*;
+
 use anyhow::Result;
-use assembly::*;
 use assembly_printer::print_assembly_ast;
 use stack_allocator::StackAllocator;
 

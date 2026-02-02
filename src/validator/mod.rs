@@ -1,9 +1,10 @@
-use crate::parser::ast::*;
-use crate::parser::ast_printer;
-use anyhow::{Result, bail};
-use crate::name_generator;
-use std::collections::HashMap;
 use crate::error;
+use crate::name_generator;
+use crate::parser::ast_printer;
+use crate::parser::ast::*;
+
+use anyhow::{Result, bail};
+use std::collections::HashMap;
 
 struct Validator {
    variable_map: HashMap<String, String>
