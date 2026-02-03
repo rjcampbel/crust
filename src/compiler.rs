@@ -50,7 +50,7 @@ impl Compiler {
       Ok(())
    }
 
-   pub fn lex(&mut self, print_tokens: bool) -> Result<Vec<Token>> {
+   pub fn lex(&mut self, print_tokens: bool) -> Result<Vec<Option<Token>>> {
       self.preprocess()?;
       Ok(lexer::lex(&self.source, print_tokens)?)
    }

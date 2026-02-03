@@ -164,17 +164,17 @@ fn compound_to_arithmetic(t: &TokenType) -> BinaryOp {
 }
 
 struct Parser {
-   tokens: Vec<Token>,
+   tokens: Vec<Option<Token>>,
    current: usize,
 }
 
-pub fn parse(tokens: Vec<Token>, print_ast: bool) -> Result<AST> {
+pub fn parse(tokens: Vec<Option<Token>>, print_ast: bool) -> Result<AST> {
    let mut parser = Parser::new(tokens);
    Ok(parser.parse(print_ast)?)
 }
 
 impl Parser {
-   pub fn new(tokens: Vec<Token>) -> Self {
+   pub fn new(tokens: Vec<Option<Token>>) -> Self {
       Self {
          tokens,
          current: 0,
@@ -193,7 +193,7 @@ impl Parser {
 
    fn program(&mut self) -> Result<Program> {
       let function = self.function()?;
-      ensure!(self.at_end(), error::error(self.peek().line_number, format!("Expected end of file, found {}", self.peek().lexeme), error::ErrorType::SyntaxError));
+      ensure!(self.at_end(), error::error(self.peek().as_ref().unwrap().line_number, format!("Expected end of file, found {}", self.peek().as_ref().unwrap().lexeme), error::ErrorType::SyntaxError));
       Ok(function)
    }
 
@@ -211,7 +211,7 @@ impl Parser {
 
    fn body(&mut self) -> Result<Vec<BlockItem>> {
       let mut body = Vec::new();
-      while !self.at_end() && self.peek().token_type != TokenType::CloseBrace {
+      while !self.at_end() && self.peek().as_ref().unwrap().token_type != TokenType::CloseBrace {
          let block_item = self.block_item()?;
          body.push(block_item);
       }
@@ -219,7 +219,7 @@ impl Parser {
    }
 
    fn block_item(&mut self) -> Result<BlockItem> {
-      match self.peek().token_type {
+      match self.peek().as_ref().unwrap().token_type {
          TokenType::Int => {
             self.declaration()
          },
@@ -230,32 +230,32 @@ impl Parser {
    fn declaration(&mut self) -> Result<BlockItem> {
       self.consume(TokenType::Int)?;
       let name = self.identifier()?;
-      let expr = if self.peek().token_type == TokenType::Equal {
+      let expr = if self.peek().as_ref().unwrap().token_type == TokenType::Equal {
          self.advance();
          Some(self.expression(Precedence::None)?)
       } else {
          None
       };
-      let line = self.peek().line_number;
+      let line = self.peek().as_ref().unwrap().line_number;
       self.consume(TokenType::Semicolon)?;
       Ok(BlockItem::Decl(Decl::Decl(name, expr, line)))
    }
 
    fn identifier(&mut self) -> Result<String> {
-      match self.peek().token_type {
+      match self.peek().as_ref().unwrap().token_type {
          TokenType::Identifier => {
             self.advance();
-            Ok(self.previous().lexeme.clone())
+            Ok(self.previous().take().unwrap().lexeme)
          },
          _ => {
             let t = self.peek();
-            bail!(error::error(t.line_number, format!("Expected an identifier, found '{}'", t.lexeme), error::ErrorType::SyntaxError))
+            bail!(error::error(t.as_ref().unwrap().line_number, format!("Expected an identifier, found '{}'", t.as_ref().unwrap().lexeme), error::ErrorType::SyntaxError))
          }
       }
    }
 
    fn statement(&mut self) -> Result<Stmt> {
-      match self.peek().token_type {
+      match self.peek().as_ref().unwrap().token_type {
          TokenType::Return => {
             self.advance();
             let expr = self.expression(Precedence::None)?;
@@ -272,7 +272,7 @@ impl Parser {
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::CloseParen)?;
             let then_stmt = self.statement()?;
-            let else_stmt = if self.peek().token_type == TokenType::Else {
+            let else_stmt = if self.peek().as_ref().unwrap().token_type == TokenType::Else {
                self.advance();
                Some(Box::new(self.statement()?))
             } else {
@@ -291,19 +291,19 @@ impl Parser {
    fn expression(&mut self, min_prec: Precedence) -> Result<Expr> {
       let mut left: Expr = self.factor()?;
 
-      while self.peek().token_type.precedence() >= min_prec {
+      while self.peek().as_ref().unwrap().token_type.precedence() >= min_prec {
          if self.match_binary_op() {
-            let operator_type = self.previous().token_type.clone();
-            let line_number = self.previous().line_number;
+            let operator_type = self.previous().as_ref().unwrap().token_type.clone();
+            let line_number = self.previous().as_ref().unwrap().line_number;
             let next_prec = operator_type.precedence().increment();
             let binary_op = operator_type.to_binary_op();
             let right = self.expression(next_prec)?;
             left = Expr::BinaryOp(binary_op, Box::new(left.clone()), Box::new(right), line_number);
          } else if self.match_assignment_op() {
-            match self.previous().token_type {
+            match self.previous().as_ref().unwrap().token_type {
                TokenType::Equal => {
-                  let prec = self.previous().token_type.precedence();
-                  let line_number = self.previous().line_number;
+                  let prec = self.previous().as_ref().unwrap().token_type.precedence();
+                  let line_number = self.previous().as_ref().unwrap().line_number;
                   let right = self.expression(prec)?;
                   left = Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number);
                },
@@ -313,7 +313,7 @@ impl Parser {
                },
             }
          } else if self.match_token(TokenType::Question) {
-            let prec = self.previous().token_type.precedence();
+            let prec = self.previous().as_ref().unwrap().token_type.precedence();
             let middle = self.expression(Precedence::None)?;
             self.consume(TokenType::Colon)?;
             let right = self.expression(prec)?;
@@ -326,15 +326,15 @@ impl Parser {
    }
 
    fn compound_assignment(&mut self, op: BinaryOp, left: &Expr) -> Result<Expr> {
-      let line_number = self.previous().line_number;
-      let prec = self.previous().token_type.precedence();
+      let line_number = self.previous().as_ref().unwrap().line_number;
+      let prec = self.previous().as_ref().unwrap().token_type.precedence();
       let right = Expr::BinaryOp(op, Box::new(left.clone()), Box::new(self.expression(prec)?), line_number);
       Ok(Expr::Assignment(Box::new(left.clone()), Box::new(right), line_number))
    }
 
    fn unary(&mut self) -> Result<Expr> {
-      let operator_type = self.previous().token_type.clone();
-      let line_number = self.previous().line_number;
+      let operator_type = self.previous().as_ref().unwrap().token_type.clone();
+      let line_number = self.previous().as_ref().unwrap().line_number;
       let unary_op = operator_type.to_unary_op();
       let expr = self.factor()?;
       Ok(Expr::UnaryOp(unary_op, Box::new(expr), line_number))
@@ -344,36 +344,36 @@ impl Parser {
       if self.match_unary_op() {
          return self.unary()
       } else {
-         match self.peek().token_type {
+         match self.peek().as_ref().unwrap().token_type {
             TokenType::Integer(i) => {
-               let line_number = self.peek().line_number;
+               let line_number = self.peek().as_ref().unwrap().line_number;
                self.advance();
                Ok(Expr::Integer(i, line_number))
             },
             TokenType::OpenParen => {
                self.advance();
-               let precedence = self.peek().token_type.precedence();
+               let precedence = self.peek().as_ref().unwrap().token_type.precedence();
                let expr = self.expression(precedence)?;
                self.consume(TokenType::CloseParen)?;
                Ok(expr)
             },
             TokenType::Identifier => {
-               let line_number = self.peek().line_number;
+               let line_number = self.peek().as_ref().unwrap().line_number;
                Ok(Expr::Var(self.identifier()?, line_number))
             },
             _ => {
                let t = self.peek();
-               bail!(error::error(t.line_number, format!("Expected an expression, found '{}'", t.lexeme), error::ErrorType::SyntaxError))
+               bail!(error::error(t.as_ref().unwrap().line_number, format!("Expected an expression, found '{}'", t.as_ref().unwrap().lexeme), error::ErrorType::SyntaxError))
             }
          }
       }
    }
 
-   fn consume(&mut self, token_type: TokenType) -> Result<&Token> {
+   fn consume(&mut self, token_type: TokenType) -> Result<&Option<Token>> {
       if self.check(&token_type) {
          return Ok(self.advance());
       }
-      bail!(error::error(self.peek().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().token_type), error::ErrorType::SyntaxError))
+      bail!(error::error(self.peek().as_ref().unwrap().line_number, format!("Expected '{}', found '{}'", token_type, self.peek().as_ref().unwrap().token_type), error::ErrorType::SyntaxError))
    }
 
    fn match_token(&mut self, token_type: TokenType) -> bool {
@@ -384,36 +384,36 @@ impl Parser {
       false
    }
 
-   fn previous(&mut self) -> &Token {
-      &self.tokens[self.current - 1]
+   fn previous(&mut self) -> &mut Option<Token> {
+      &mut self.tokens[self.current - 1]
    }
 
    fn check(&mut self, token_type: &TokenType) -> bool {
       if self.at_end() {
          return false;
       }
-      &self.peek().token_type == token_type
+      &self.peek().as_ref().unwrap().token_type == token_type
    }
 
-   fn advance(&mut self) -> &Token {
+   fn advance(&mut self) -> &Option<Token> {
       let t = &self.tokens[self.current];
       self.current += 1;
       return t;
    }
 
-   fn peek(&mut self) -> &Token {
+   fn peek(&mut self) -> &Option<Token> {
       &self.tokens[self.current]
    }
 
    fn at_end(&mut self) -> bool {
-      self.peek().token_type == TokenType::EOF
+      self.peek().as_ref().unwrap().token_type == TokenType::EOF
    }
 
    fn match_binary_op(&mut self) -> bool {
       if self.at_end() {
          return false;
       }
-      if TokenType::BINARY_OPS.contains(&self.peek().token_type) {
+      if TokenType::BINARY_OPS.contains(&self.peek().as_ref().unwrap().token_type) {
          self.advance();
          return true;
       }
@@ -424,7 +424,7 @@ impl Parser {
       if self.at_end() {
          return false;
       }
-      if TokenType::UNARY_OPS.contains(&self.peek().token_type) {
+      if TokenType::UNARY_OPS.contains(&self.peek().as_ref().unwrap().token_type) {
          self.advance();
          return true;
       }
@@ -435,11 +435,10 @@ impl Parser {
       if self.at_end() {
          return false;
       }
-      if TokenType::ASSIGNMENT_OPS.contains(&self.peek().token_type) {
+      if TokenType::ASSIGNMENT_OPS.contains(&self.peek().as_ref().unwrap().token_type) {
          self.advance();
          return true;
       }
       false
    }
-
 }

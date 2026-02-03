@@ -7,13 +7,13 @@ use token::{Token, TokenType};
 
 struct Lexer<'a> {
    source: &'a String,
-   tokens: Vec<Token>,
+   tokens: Vec<Option<Token>>,
    start: usize,
    current: usize,
    line: usize,
 }
 
-pub fn lex(source: &String, print_tokens: bool) -> Result<Vec<Token>> {
+pub fn lex(source: &String, print_tokens: bool) -> Result<Vec<Option<Token>>> {
    let mut lexer = Lexer::new(source);
    lexer.lex(print_tokens)?;
    Ok(lexer.tokens)
@@ -37,7 +37,7 @@ impl<'a> Lexer<'a> {
       }
 
       let token = Token::new(TokenType::EOF, String::from(""), self.line);
-      self.tokens.push(token);
+      self.tokens.push(Some(token));
 
       if print_tokens {
          for token in &self.tokens {
@@ -197,7 +197,7 @@ impl<'a> Lexer<'a> {
       let line_number = self.line;
       let lexeme = self.lexeme();
       let token = Token::new(token_type, lexeme.to_string(), line_number);
-      self.tokens.push(token);
+      self.tokens.push(Some(token));
    }
 
    fn advance(&mut self) -> char {
