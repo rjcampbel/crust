@@ -48,35 +48,36 @@ impl Validator {
       Ok(())
    }
 
-   fn validate_block_item(&mut self, item: &BlockItem) -> Result<BlockItem> {
+   fn validate_block_item(&mut self, item: &mut BlockItem) -> Result<()> {
       match item {
          BlockItem::Stmt(stmt) => {
-            Ok(BlockItem::Stmt(self.resolve_statement(stmt)?))
+            self.resolve_statement(stmt)?;
          },
          BlockItem::Decl(decl) => {
-            Ok(BlockItem::Decl(self.resolve_declaration(decl)?))
+            self.resolve_declaration(decl)?;
          }
       }
+      Ok(())
    }
 
-   fn resolve_statement(&mut self, stmt: &Stmt) -> Result<Stmt> {
+   fn resolve_statement(&mut self, stmt: &mut Stmt) -> Result<()> {
       match stmt {
          Stmt::Expression(e) => {
-            Ok(Stmt::Expression(self.resolve_expr(&e)?))
+            self.resolve_expr(&e)?;
          },
          Stmt::Return(e) => {
-            Ok(Stmt::Return(self.resolve_expr(&e)?))
+            self.resolve_expr(&e)?;
          },
-         Stmt::Null => Ok(Stmt::Null),
+         Stmt::Null => (),
          Stmt::If(expr, then_stmt, else_stmt) => {
-            let else_stmt = if let Some(s) = else_stmt {
-               Some(Box::new(self.resolve_statement(s)?))
-            } else {
-               None
-            };
-            Ok(Stmt::If(self.resolve_expr(expr)?, Box::new(self.resolve_statement(then_stmt)?), else_stmt))
+            if let Some(else_stmt) = else_stmt {
+               self.resolve_statement(else_stmt)?;
+            }
+            self.resolve_expr(expr)?;
+            self.resolve_statement(then_stmt)?;
          }
       }
+      Ok(())
    }
 
    fn resolve_declaration(&mut self, decl: &Decl) -> Result<Decl> {
