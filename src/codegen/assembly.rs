@@ -1,6 +1,7 @@
 use super::stack_allocator::StackAllocator;
 
 use std::fmt;
+use std::rc::Rc;
 
 pub struct AssemblyAST {
    pub program: AssemblyProgram,
@@ -13,7 +14,7 @@ impl fmt::Display for AssemblyAST {
 }
 
 pub enum AssemblyProgram {
-   Function(String, Vec<Instruction>, StackAllocator),
+   Function(Rc<String>, Vec<Instruction>, StackAllocator),
 }
 
 impl fmt::Display for AssemblyProgram {
@@ -44,10 +45,10 @@ pub enum Instruction {
    Shr(Operand, Operand),
    Idiv(Operand),
    Cdq,
-   Jmp(String),
-   JmpCC(ConditionCode, String),
+   Jmp(Rc<String>),
+   JmpCC(ConditionCode, Rc<String>),
    SetCC(ConditionCode, Operand),
-   Label(String),
+   Label(Rc<String>),
    AllocateStack(i64),
    Return
 }
@@ -121,7 +122,7 @@ impl fmt::Display for BinaryOp {
 pub enum Operand {
    Immediate(i64),
    Register(Register),
-   Pseudo(String),
+   Pseudo(Rc<String>),
    Stack(i64),
 }
 

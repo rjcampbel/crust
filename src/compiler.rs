@@ -61,8 +61,9 @@ impl Compiler {
    }
 
    pub fn validate(&mut self, print_tokens: bool, print_ast: bool) -> Result<AST> {
-      let ast = self.parse(print_tokens, print_ast)?;
-      Ok(validator::validate(&ast, print_ast)?)
+      let mut ast = self.parse(print_tokens, print_ast)?;
+      validator::validate(&mut ast, print_ast)?;
+      Ok(ast)
    }
 
    pub fn tacky(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool) -> Result<TackyAST> {

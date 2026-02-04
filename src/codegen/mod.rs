@@ -8,6 +8,7 @@ use crate::tacky::*;
 use anyhow::Result;
 use assembly_printer::print_assembly_ast;
 use stack_allocator::StackAllocator;
+use std::rc::Rc;
 
 pub fn codegen(tacky: &tacky::TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
    let assembly_ast = generate_assembly(&tacky)?;
@@ -20,7 +21,7 @@ pub fn codegen(tacky: &tacky::TackyAST, print_assembly: bool) -> Result<Assembly
 fn generate_assembly(tacky: &tacky::TackyAST) -> Result<AssemblyAST> {
    let mut assembly = match &tacky.program {
       tacky::TackyProgram::Function(identifier, body)=> {
-         let function = generate_function(&identifier, &body)?;
+         let function = generate_function(Rc::clone(&identifier), &body)?;
          Ok(AssemblyAST { program: function })
       }
    };
@@ -32,9 +33,9 @@ fn generate_assembly(tacky: &tacky::TackyAST) -> Result<AssemblyAST> {
    assembly
 }
 
-fn generate_function(name: &String, instrs: &Vec<tacky::Instr>) -> Result<AssemblyProgram> {
+fn generate_function(name: Rc<String>, instrs: &Vec<tacky::Instr>) -> Result<AssemblyProgram> {
    let instructions = generate_instructions(instrs)?;
-   let assembly_function = AssemblyProgram::Function(name.clone(), instructions, StackAllocator::new());
+   let assembly_function = AssemblyProgram::Function(Rc::clone(&name), instructions, StackAllocator::new());
    Ok(assembly_function)
 }
 
@@ -161,7 +162,7 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
 fn generate_operand(val: &tacky::Val) -> Operand {
    match val {
       tacky::Val::Integer(i) => Operand::Immediate(*i),
-      tacky::Val::Var(name) => Operand::Pseudo(name.clone()),
+      tacky::Val::Var(name) => Operand::Pseudo(Rc::clone(name)),
    }
 }
 

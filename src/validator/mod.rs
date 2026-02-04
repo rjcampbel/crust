@@ -5,18 +5,19 @@ use crate::parser::ast::*;
 
 use anyhow::{Result, bail};
 use std::collections::HashMap;
+use std::rc::Rc;
 
 struct Validator {
-   variable_map: HashMap<String, String>
+   variable_map: HashMap<Rc<String>, Rc<String>>
 }
 
-pub fn validate(ast: &AST, print_ast: bool) -> Result<AST> {
+pub fn validate(ast: &mut AST, print_ast: bool) -> Result<()> {
    let mut validator = Validator::new();
-   let ast = validator.validate(ast)?;
+   validator.validate(ast)?;
    if print_ast {
       ast_printer::print_ast(&ast);
    }
-   Ok(ast)
+   Ok(())
 }
 
 impl Validator {
@@ -26,24 +27,25 @@ impl Validator {
       }
    }
 
-   fn validate(&mut self, ast: &AST) -> Result<AST> {
-      Ok(AST { program: self.resolve_program(&ast.program)? })
+   fn validate(&mut self, ast: &mut AST) -> Result<()> {
+      self.resolve_program(&mut ast.program)?;
+      Ok(())
    }
 
-   fn resolve_program(&mut self, program: &Program) -> Result<Program> {
+   fn resolve_program(&mut self, program: &mut Program) -> Result<()> {
       match program {
-         Program::FunctionDefinition(FunctionDefinition::Function(name, body)) => {
-            Ok(Program::FunctionDefinition(self.resolve_function(&name, &body)?))
+         Program::FunctionDefinition(FunctionDefinition::Function(_, body)) => {
+            self.resolve_function(body)?;
+            Ok(())
          }
       }
    }
 
-   fn resolve_function(&mut self, name: &String, body: &Vec<BlockItem>) -> Result<FunctionDefinition> {
-      let mut block_items = Vec::new();
-      for block_item in body {
-         block_items.push(self.validate_block_item(block_item)?);
+   fn resolve_function(&mut self, body: &mut Vec<BlockItem>) -> Result<()> {
+      for block_item in &mut *body {
+         self.validate_block_item(block_item)?;
       }
-      Ok(FunctionDefinition::Function(name.to_string(), block_items))
+      Ok(())
    }
 
    fn validate_block_item(&mut self, item: &BlockItem) -> Result<BlockItem> {
@@ -82,8 +84,8 @@ impl Validator {
       if self.variable_map.contains_key(name) {
          bail!(error::error(*line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
       }
-      let unique_name = name_generator::uniquify_identifier(name);
-      self.variable_map.insert(name.to_string(), unique_name.clone());
+      let unique_name = Rc::new(name_generator::uniquify_identifier(name));
+      self.variable_map.insert(Rc::clone(&name), Rc::clone(&unique_name));
 
       let initializer = if let Some(expr) = initializer {
          Some(self.resolve_expr(expr)?)
@@ -104,19 +106,19 @@ impl Validator {
          },
          Expr::Var(name, line_number) => {
             if let Some(unique_name) = self.variable_map.get(name) {
-               return Ok(Expr::Var(unique_name.clone(), *line_number));
+               return Ok(Expr::Var(Rc::clone(unique_name), *line_number));
             } else {
                bail!(error::error(*line_number, format!("Undeclared variable {}", name), error::ErrorType::SemanticError))
             }
          },
          Expr::BinaryOp(operator, left, right, line_number) => {
-            Ok(Expr::BinaryOp(operator.clone(), Box::new(self.resolve_expr(&**left)?), Box::new(self.resolve_expr(&**right)?), *line_number))
+            Ok(Expr::BinaryOp(operator.clone(), Box::new(self.resolve_expr(left)?), Box::new(self.resolve_expr(right)?), *line_number))
          },
          Expr::Integer(i, line_number) => {
             Ok(Expr::Integer(*i, *line_number))
          },
          Expr::UnaryOp(operator, expr, line_number) => {
-            Ok(Expr::UnaryOp(operator.clone(), Box::new(self.resolve_expr(&**expr)?), *line_number))
+            Ok(Expr::UnaryOp(operator.clone(), Box::new(self.resolve_expr(expr)?), *line_number))
          },
          Expr::Conditional(condition, middle, right) => {
             Ok(Expr::Conditional(Box::new(self.resolve_expr(condition)?), Box::new(self.resolve_expr(middle)?), Box::new(self.resolve_expr(right)?)))

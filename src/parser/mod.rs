@@ -7,6 +7,7 @@ use crate::lexer::token::{Token, TokenType};
 use anyhow::{bail, ensure, Result};
 use ast::*;
 use num::traits::FromPrimitive;
+use std::rc::Rc;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
 #[repr(u8)]
@@ -123,7 +124,7 @@ impl TokenType {
       TokenType::Tilde,
       TokenType::Bang];
 
-   fn to_unary_op(self) -> UnaryOp {
+   fn to_unary_op(&self) -> UnaryOp {
       match self {
          TokenType::Dash => UnaryOp::Negate,
          TokenType::Tilde => UnaryOp::Complement,
@@ -243,7 +244,7 @@ impl Parser {
       Ok(BlockItem::Decl(Decl::Decl(name, expr, line)))
    }
 
-   fn identifier(&mut self) -> Result<String> {
+   fn identifier(&mut self) -> Result<Rc<String>> {
       match self.peek().as_ref().unwrap().token_type {
          TokenType::Identifier => {
             self.advance();
@@ -336,9 +337,8 @@ impl Parser {
    }
 
    fn unary(&mut self) -> Result<Expr> {
-      let operator_type = self.previous().as_ref().unwrap().token_type.clone();
       let line_number = self.previous().as_ref().unwrap().line_number;
-      let unary_op = operator_type.to_unary_op();
+      let unary_op = self.previous().as_ref().unwrap().token_type.to_unary_op();
       let expr = self.factor()?;
       Ok(Expr::UnaryOp(unary_op, Box::new(expr), line_number))
    }

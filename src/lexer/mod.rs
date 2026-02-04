@@ -4,6 +4,7 @@ use crate::error;
 
 use anyhow::{bail, Result};
 use token::{Token, TokenType};
+use std::rc::Rc;
 
 struct Lexer<'a> {
    source: &'a String,
@@ -36,7 +37,7 @@ impl<'a> Lexer<'a> {
          self.scan_token()?;
       }
 
-      let token = Token::new(TokenType::EOF, String::from(""), self.line);
+      let token = Token::new(TokenType::EOF, Rc::new(String::from("")), self.line);
       self.tokens.push(Some(token));
 
       if print_tokens {
@@ -196,7 +197,7 @@ impl<'a> Lexer<'a> {
    fn add_token(&mut self, token_type: TokenType) {
       let line_number = self.line;
       let lexeme = self.lexeme();
-      let token = Token::new(token_type, lexeme.to_string(), line_number);
+      let token = Token::new(token_type, Rc::new(lexeme.to_string()), line_number);
       self.tokens.push(Some(token));
    }
 
