@@ -63,10 +63,10 @@ impl Validator {
    fn resolve_statement(&mut self, stmt: &mut Stmt) -> Result<()> {
       match stmt {
          Stmt::Expression(e) => {
-            self.resolve_expr(&e)?;
+            self.resolve_expr(e)?;
          },
          Stmt::Return(e) => {
-            self.resolve_expr(&e)?;
+            self.resolve_expr(e)?;
          },
          Stmt::Null => (),
          Stmt::If(expr, then_stmt, else_stmt) => {
@@ -80,7 +80,7 @@ impl Validator {
       Ok(())
    }
 
-   fn resolve_declaration(&mut self, decl: &Decl) -> Result<Decl> {
+   fn resolve_declaration(&mut self, decl: &mut Decl) -> Result<()> {
       let Decl::Decl(name, initializer, line_number) = decl;
       if self.variable_map.contains_key(name) {
          bail!(error::error(*line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
@@ -88,42 +88,44 @@ impl Validator {
       let unique_name = Rc::new(name_generator::uniquify_identifier(name));
       self.variable_map.insert(Rc::clone(&name), Rc::clone(&unique_name));
 
-      let initializer = if let Some(expr) = initializer {
-         Some(self.resolve_expr(expr)?)
-      } else {
-         None
-      };
-      Ok(Decl::Decl(unique_name, initializer, *line_number))
+      if let Some(expr) = initializer {
+         self.resolve_expr(expr)?;
+      }
+      *name = Rc::clone(&unique_name);
+      Ok(())
    }
 
-   fn resolve_expr(&mut self, expr: &Expr) -> Result<Expr> {
+   fn resolve_expr(&mut self, expr: &mut Expr) -> Result<()> {
       match expr {
          Expr::Assignment(left, right, line_number) => {
             if let Expr::Var(_, _) = **left {
-               Ok(Expr::Assignment(Box::new(self.resolve_expr(&**left)?), Box::new(self.resolve_expr(&**right)?), *line_number))
+               self.resolve_expr(left)?;
+               self.resolve_expr(right)?;
             } else {
                bail!(error::error(*line_number, format!("Invalid lvalue"), error::ErrorType::SemanticError))
             }
          },
          Expr::Var(name, line_number) => {
             if let Some(unique_name) = self.variable_map.get(name) {
-               return Ok(Expr::Var(Rc::clone(unique_name), *line_number));
+               *name = Rc::clone(unique_name);
             } else {
                bail!(error::error(*line_number, format!("Undeclared variable {}", name), error::ErrorType::SemanticError))
             }
          },
-         Expr::BinaryOp(operator, left, right, line_number) => {
-            Ok(Expr::BinaryOp(operator.clone(), Box::new(self.resolve_expr(left)?), Box::new(self.resolve_expr(right)?), *line_number))
+         Expr::BinaryOp(_, left, right, _) => {
+            self.resolve_expr(left)?;
+            self.resolve_expr(right)?;
          },
-         Expr::Integer(i, line_number) => {
-            Ok(Expr::Integer(*i, *line_number))
-         },
-         Expr::UnaryOp(operator, expr, line_number) => {
-            Ok(Expr::UnaryOp(operator.clone(), Box::new(self.resolve_expr(expr)?), *line_number))
+         Expr::Integer(_, _) => (),
+         Expr::UnaryOp(_, expr, _) => {
+            self.resolve_expr(expr)?;
          },
          Expr::Conditional(condition, middle, right) => {
-            Ok(Expr::Conditional(Box::new(self.resolve_expr(condition)?), Box::new(self.resolve_expr(middle)?), Box::new(self.resolve_expr(right)?)))
+            self.resolve_expr(condition)?;
+            self.resolve_expr(middle)?;
+            self.resolve_expr(right)?;
          }
       }
+      Ok(())
    }
 }
