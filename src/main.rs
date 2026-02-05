@@ -9,9 +9,8 @@ mod parser;
 mod tacky;
 mod validator;
 
-use compiler::Compiler;
-
 use anyhow::Result;
+use compiler::Compiler;
 use clap::Parser;
 use std::path::PathBuf;
 
@@ -22,7 +21,9 @@ extern crate num_traits;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// Path to C source file to compile
+    /// Path to C source file to compile. Running without any additional arguments,
+    /// or with only print_* arguments, will run all stages of the compiler and
+    /// generate an executable in the same directory as the source file.
     source: PathBuf,
 
     /// Run only the lexer
@@ -33,15 +34,15 @@ struct Cli {
     #[arg(long, short)]
     parse: bool,
 
-    /// Run only the lexer, parser, and tacky generation
-    #[arg(long, short)]
-    tacky: bool,
-
     /// Run only the lexer, parser, and validator
     #[arg(long, short)]
     validate: bool,
 
-    /// Run only the lexer, parser, validator, and assembly generation
+    /// Run only the lexer, parser, validator, and tacky generation
+    #[arg(long, short)]
+    tacky: bool,
+
+    /// Run only the lexer, parser, validator, tacky generation, and assembly generation
     #[arg(long, short)]
     codegen: bool,
 
