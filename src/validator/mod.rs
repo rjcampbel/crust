@@ -5,10 +5,9 @@ use crate::parser::ast::*;
 
 use anyhow::{Result, bail};
 use std::collections::HashMap;
-use std::rc::Rc;
 
 struct Validator {
-   variable_map: HashMap<Rc<String>, Rc<String>>
+   variable_map: HashMap<String, String>
 }
 
 pub fn validate(ast: &mut AST, print_ast: bool) -> Result<()> {
@@ -85,13 +84,13 @@ impl Validator {
       if self.variable_map.contains_key(name) {
          bail!(error::error(*line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
       }
-      let unique_name = Rc::new(name_generator::uniquify_identifier(name));
-      self.variable_map.insert(Rc::clone(&name), Rc::clone(&unique_name));
+      let unique_name = name_generator::uniquify_identifier(name);
+      self.variable_map.insert(name.clone(), unique_name.clone());
 
       if let Some(expr) = initializer {
          self.resolve_expr(expr)?;
       }
-      *name = Rc::clone(&unique_name);
+      *name = unique_name;
       Ok(())
    }
 
@@ -107,7 +106,7 @@ impl Validator {
          },
          Expr::Var(name, line_number) => {
             if let Some(unique_name) = self.variable_map.get(name) {
-               *name = Rc::clone(unique_name);
+               *name = unique_name.clone();
             } else {
                bail!(error::error(*line_number, format!("Undeclared variable {}", name), error::ErrorType::SemanticError))
             }

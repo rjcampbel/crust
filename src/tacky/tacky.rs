@@ -1,11 +1,9 @@
-use std::rc::Rc;
-
 pub struct TackyAST {
    pub program: TackyProgram,
 }
 
 pub enum TackyProgram {
-   Function(Rc<String>, Vec<Instr>)
+   Function(String, Vec<Instr>)
 }
 
 pub enum Instr {
@@ -13,16 +11,16 @@ pub enum Instr {
    Unary(UnaryOp, Val, Val),
    Binary(BinaryOp, Val, Val, Val),
    Copy(Val, Val),
-   Jump(Rc<String>),
-   JumpIfZero(Val, Rc<String>),
-   JumpIfNotZero(Val, Rc<String>),
-   Label(Rc<String>),
+   Jump(String),
+   JumpIfZero(Val, String),
+   JumpIfNotZero(Val, String),
+   Label(String),
 }
 
 #[derive(Clone, Debug)]
 pub enum Val {
    Integer(i64),
-   Var(Rc<String>),
+   Var(String),
 }
 
 #[derive(Debug)]

@@ -3,25 +3,24 @@ mod assembly_printer;
 mod stack_allocator;
 
 use crate::codegen::assembly::*;
-use crate::tacky::*;
+use crate::tacky::tacky::{BinaryOp, Instr, UnaryOp, TackyAST, TackyProgram, Val};
 
 use anyhow::Result;
 use assembly_printer::print_assembly_ast;
 use stack_allocator::StackAllocator;
-use std::rc::Rc;
 
-pub fn codegen(tacky: &tacky::TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
-   let assembly_ast = generate_assembly(&tacky)?;
+pub fn codegen(tacky: TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
+   let assembly_ast = generate_assembly(tacky)?;
    if print_assembly {
       print_assembly_ast(&assembly_ast);
    }
    Ok(assembly_ast)
 }
 
-fn generate_assembly(tacky: &tacky::TackyAST) -> Result<AssemblyAST> {
-   let mut assembly = match &tacky.program {
-      tacky::TackyProgram::Function(identifier, body)=> {
-         let function = generate_function(Rc::clone(&identifier), &body)?;
+fn generate_assembly(tacky: TackyAST) -> Result<AssemblyAST> {
+   let mut assembly = match tacky.program {
+      TackyProgram::Function(identifier, body)=> {
+         let function = generate_function(identifier, body)?;
          Ok(AssemblyAST { program: function })
       }
    };
@@ -33,34 +32,34 @@ fn generate_assembly(tacky: &tacky::TackyAST) -> Result<AssemblyAST> {
    assembly
 }
 
-fn generate_function(name: Rc<String>, instrs: &Vec<tacky::Instr>) -> Result<AssemblyProgram> {
+fn generate_function(name: String, instrs: Vec<Instr>) -> Result<AssemblyProgram> {
    let instructions = generate_instructions(instrs)?;
-   let assembly_function = AssemblyProgram::Function(Rc::clone(&name), instructions, StackAllocator::new());
+   let assembly_function = AssemblyProgram::Function(name, instructions, StackAllocator::new());
    Ok(assembly_function)
 }
 
-fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>> {
+fn generate_instructions(instrs: Vec<Instr>) -> Result<Vec<Instruction>> {
    let mut instructions = Vec::new();
    for instr in instrs {
       match instr {
-         tacky::Instr::Return(val) => {
+         Instr::Return(val) => {
             let ret = generate_operand(val);
             instructions.push(Instruction::Mov(ret, Operand::Register(Register::AX)));
             instructions.push(Instruction::Return);
          },
-         tacky::Instr::Unary(tacky::UnaryOp::Not, src, dest) => {
+         Instr::Unary(UnaryOp::Not, src, dest) => {
             instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(src)));
-            instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest)));
+            instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest.clone())));
             instructions.push(Instruction::SetCC(ConditionCode::E, generate_operand(dest)));
          },
-         tacky::Instr::Unary(operator, src, dest) => {
+         Instr::Unary(operator, src, dest) => {
             let src = generate_operand(src);
             let dst = generate_operand(dest);
             let op = match operator {
-               tacky::UnaryOp::Negate => {
+               UnaryOp::Negate => {
                   assembly::UnaryOp::Neg
                },
-               tacky::UnaryOp::Complement => {
+               UnaryOp::Complement => {
                   assembly::UnaryOp::Not
                },
                _ => unreachable!()
@@ -68,101 +67,98 @@ fn generate_instructions(instrs: &Vec<tacky::Instr>) -> Result<Vec<Instruction>>
             instructions.push(Instruction::Mov(src, dst.clone()));
             instructions.push(Instruction::Unary(op, dst));
          },
-         tacky::Instr::Binary(tacky::BinaryOp::Equal | tacky::BinaryOp::NotEqual | tacky::BinaryOp::LessThan | tacky::BinaryOp::LessOrEqual | tacky::BinaryOp::GreaterThan | tacky::BinaryOp::GreaterOrEqual, left, right, dest) => {
+         Instr::Binary(operator @ (BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::LessThan | BinaryOp::LessOrEqual | BinaryOp::GreaterThan | BinaryOp::GreaterOrEqual), left, right, dest) => {
             instructions.push(Instruction::Cmp(generate_operand(right), generate_operand(left)));
-            instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest)));
-            let code = match &instr {
-               tacky::Instr::Binary(operator, ..) => match operator {
-                  tacky::BinaryOp::Equal => ConditionCode::E,
-                  tacky::BinaryOp::NotEqual => ConditionCode::NE,
-                  tacky::BinaryOp::LessThan => ConditionCode::L,
-                  tacky::BinaryOp::LessOrEqual => ConditionCode::LE,
-                  tacky::BinaryOp::GreaterThan => ConditionCode::G,
-                  tacky::BinaryOp::GreaterOrEqual => ConditionCode::GE,
-                  _ => unreachable!()
-               },
+            instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest.clone())));
+            let code = match operator {
+               BinaryOp::Equal => ConditionCode::E,
+               BinaryOp::NotEqual => ConditionCode::NE,
+               BinaryOp::LessThan => ConditionCode::L,
+               BinaryOp::LessOrEqual => ConditionCode::LE,
+               BinaryOp::GreaterThan => ConditionCode::G,
+               BinaryOp::GreaterOrEqual => ConditionCode::GE,
                _ => unreachable!()
             };
             instructions.push(Instruction::SetCC(code, generate_operand(dest)));
          },
-         tacky::Instr::Binary(operator, left, right, dest) => {
+         Instr::Binary(operator, left, right, dest) => {
             let left = generate_operand(left);
             let right = generate_operand(right);
             let dst = generate_operand(dest);
             match operator {
-               tacky::BinaryOp::Add => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::Add, right.clone(), dst.clone()));
+               BinaryOp::Add => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::Add, right, dst));
                },
-               tacky::BinaryOp::Subtract => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, right.clone(), dst.clone()));
+               BinaryOp::Subtract => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, right, dst));
                },
-               tacky::BinaryOp::Multiply => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, right.clone(), dst.clone()));
+               BinaryOp::Multiply => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, right, dst));
                },
-               &tacky::BinaryOp::Divide => {
+               BinaryOp::Divide => {
                   instructions.push(Instruction::Mov(left, Operand::Register(Register::AX)));
                   instructions.push(Instruction::Cdq);
                   instructions.push(Instruction::Idiv(right));
                   instructions.push(Instruction::Mov(Operand::Register(Register::AX), dst));
                },
-               &tacky::BinaryOp::Modulus => {
+               BinaryOp::Modulus => {
                   instructions.push(Instruction::Mov(left, Operand::Register(Register::AX)));
                   instructions.push(Instruction::Cdq);
                   instructions.push(Instruction::Idiv(right));
                   instructions.push(Instruction::Mov(Operand::Register(Register::DX), dst));
                },
-               &tacky::BinaryOp::BitwiseAnd => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseAnd, right.clone(), dst.clone()));
+               BinaryOp::BitwiseAnd => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseAnd, right, dst));
                },
-               &tacky::BinaryOp::BitwiseOr => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseOr, right.clone(), dst.clone()));
+               BinaryOp::BitwiseOr => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseOr, right, dst));
                },
-               &tacky::BinaryOp::BitwiseXor => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseXor, right.clone(), dst.clone()));
+               BinaryOp::BitwiseXor => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Binary(assembly::BinaryOp::BitwiseXor, right, dst));
                },
-               &tacky::BinaryOp::LeftShift => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Shl(right.clone(), dst.clone()));
+               BinaryOp::LeftShift => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Shl(right, dst));
                },
-               &tacky::BinaryOp::RightShift => {
-                  instructions.push(Instruction::Mov(left.clone(), dst.clone()));
-                  instructions.push(Instruction::Shr(right.clone(), dst.clone()));
+               BinaryOp::RightShift => {
+                  instructions.push(Instruction::Mov(left, dst.clone()));
+                  instructions.push(Instruction::Shr(right, dst));
                },
                _ => unreachable!()
             };
          },
-         tacky::Instr::Jump(label) => {
-            instructions.push(Instruction::Jmp(label.clone()));
+         Instr::Jump(label) => {
+            instructions.push(Instruction::Jmp(label));
          },
-         tacky::Instr::JumpIfNotZero(condition, target) => {
+         Instr::JumpIfNotZero(condition, target) => {
             instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition)));
-            instructions.push(Instruction::JmpCC(ConditionCode::NE, target.clone()));
+            instructions.push(Instruction::JmpCC(ConditionCode::NE, target));
          },
-         tacky::Instr::JumpIfZero(condition, target) => {
+         Instr::JumpIfZero(condition, target) => {
             instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition)));
-            instructions.push(Instruction::JmpCC(ConditionCode::E, target.clone()));
+            instructions.push(Instruction::JmpCC(ConditionCode::E, target));
          },
-         tacky::Instr::Copy(src, dest) => {
+         Instr::Copy(src, dest) => {
             instructions.push(Instruction::Mov(generate_operand(src), generate_operand(dest)));
          },
-         tacky::Instr::Label(label) => {
-            instructions.push(Instruction::Label(label.clone()));
+         Instr::Label(label) => {
+            instructions.push(Instruction::Label(label));
          }
       }
    }
    Ok(instructions)
 }
 
-fn generate_operand(val: &tacky::Val) -> Operand {
+fn generate_operand(val: Val) -> Operand {
    match val {
-      tacky::Val::Integer(i) => Operand::Immediate(*i),
-      tacky::Val::Var(name) => Operand::Pseudo(Rc::clone(name)),
+      Val::Integer(i) => Operand::Immediate(i),
+      Val::Var(name) => Operand::Pseudo(name),
    }
 }
 

@@ -68,11 +68,11 @@ impl Compiler {
 
    pub fn tacky(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool) -> Result<TackyAST> {
       let ast = self.validate(print_tokens, print_ast)?;
-      Ok(tacky::gen_tacky(&ast, print_tacky)?)
+      Ok(tacky::gen_tacky(ast, print_tacky)?)
    }
 
    pub fn codegen(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<AssemblyAST> {
       let tacky = self.tacky(print_tokens, print_ast, print_tacky)?;
-      Ok(codegen::codegen(&tacky, print_assembly)?)
+      Ok(codegen::codegen(tacky, print_assembly)?)
    }
 }

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 pub struct AST {
    pub program: Program,
 }
@@ -9,7 +7,7 @@ pub enum Program {
 }
 
 pub enum FunctionDefinition {
-   Function(Rc<String>, Vec<BlockItem>),
+   Function(String, Vec<BlockItem>),
 }
 
 pub enum BlockItem {
@@ -18,7 +16,7 @@ pub enum BlockItem {
 }
 
 pub enum Decl {
-   Decl(Rc<String>, Option<Expr>, usize),
+   Decl(String, Option<Expr>, usize),
 }
 
 pub enum Stmt {
@@ -31,7 +29,7 @@ pub enum Stmt {
 #[derive(Clone)]
 pub enum Expr {
    Integer(i64, usize),
-   Var(Rc<String>, usize),
+   Var(String, usize),
    UnaryOp(UnaryOp, Box<Expr>, usize),
    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>, usize),
    Assignment(Box<Expr>, Box<Expr>, usize),

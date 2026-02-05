@@ -1,5 +1,4 @@
 use std::fmt;
-use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
@@ -58,15 +57,15 @@ pub enum TokenType {
    EOF,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Token {
    pub token_type: TokenType,
-   pub lexeme: Rc<String>,
+   pub lexeme: String,
    pub line_number: usize
 }
 
 impl Token {
-   pub fn new(token_type: TokenType, lexeme: Rc<String>, line_number: usize) -> Self {
+   pub fn new(token_type: TokenType, lexeme: String, line_number: usize) -> Self {
       Self {
          token_type,
          lexeme,

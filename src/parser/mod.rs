@@ -7,7 +7,6 @@ use crate::lexer::token::{Token, TokenType};
 use anyhow::{bail, ensure, Result};
 use ast::*;
 use num::traits::FromPrimitive;
-use std::rc::Rc;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
 #[repr(u8)]
@@ -244,7 +243,7 @@ impl Parser {
       Ok(BlockItem::Decl(Decl::Decl(name, expr, line)))
    }
 
-   fn identifier(&mut self) -> Result<Rc<String>> {
+   fn identifier(&mut self) -> Result<String> {
       match self.peek().as_ref().unwrap().token_type {
          TokenType::Identifier => {
             self.advance();
