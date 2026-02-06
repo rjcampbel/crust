@@ -27,12 +27,15 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
 
 ## Features
 
-Crust is very much a work in progress. As of now, it supports the following features:
-1. Evaluating expressions using binary and unary arthmetic, logical, relational, and bitwise operators
-    1. Prefix and postfix increment and decrement operators are not yet supported
-1. Local variable declarations and accesses
-2. If statements and conditional (ternary) expressions
-    1. Compound statements not yet supported
+- [x] Chapter 1
+- [x] Chapter 2
+- [x] Chapter 3
+- [x] Chapter 4
+- [x] Chapter 5
+- [x] Chapter 6
+- [ ] Chapter 7
+- [ ] Chapter 8
+- [ ] Chapter 9
 
 I've currently worked through Chapter 6 of the book. At this point, the only programs that can be compiled are ones with a single function, `main`, that contains any of the features listed above.
 
