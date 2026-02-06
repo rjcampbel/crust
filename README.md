@@ -27,17 +27,44 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
 
 ## Features
 
-- [x] Chapter 1
-- [x] Chapter 2
-- [x] Chapter 3
-- [x] Chapter 4
-- [x] Chapter 5
-- [x] Chapter 6
-- [ ] Chapter 7
-- [ ] Chapter 8
-- [ ] Chapter 9
-
-I've currently worked through Chapter 6 of the book. At this point, the only programs that can be compiled are ones with a single function, `main`, that contains any of the features listed above.
+- [x] Chapter 1 - Basics
+  - [x] Function `main` that returns an `int` 
+- [x] Chapter 2 - Unary Operators
+  - [x] Negation
+  - [x] Bitwise Complement
+  - [x] Function `main` returns result of unary expression
+- [x] Chapter 3 - Binary Operators
+  - [x] Addition
+  - [x] Subtraction
+  - [x] Multiplication
+  - [x] Division
+  - [x] Remainder
+  - [x] Extra Credit: Bitwise AND, OR, XOR, left shift, right shift
+  - [x] Function `main` returns result of any combintion of unary and binary operator expressions
+- [x] Chapter 4 - Logical and Relational Operators
+  - [x] Logical Not, Logical And, Logical Or
+  - [x] Equal, Not Equal
+  - [x] Less Than, Greater Than, Less than or equal, Greater than or equal
+  - [x] Function `main` returns result of any combination of supporter operator expressions
+- [x] Chapter 5 - Local variables
+  - [x] Local variable declarations
+  - [x] Local variable assignments
+  - [x] Local variable resolution
+  - [x] Extra Credit: Compound assignment (+=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=)
+  - [ ] Extra Credit: Prefix and postfix increment and decrement
+  - [x] Function `main` supports local variables and returning any expression containing local variables and all supported operators
+- [x] Chapter 6 - If Statements and Conditional Expressions
+  - [x] If/Else statements without compound statements
+  - [x] Conditional (ternary) operator
+  - [x] Function `main` supports all previous chapters plus if and conditional statements and expressions 
+- [x] Chapter 7 - Compound statements
+  - [x] Nested scopes 
+  - [x] Variable scope resolutions
+  - [x] If statements with compound statements
+  - [x] Function `main` can now include arbitrary levels of nested scopes 
+- [ ] Chapter 8 - Loops
+- [ ] Chapter 9 - Functions
+- [ ] Chapter 10 - File Scope Variable Declarations and Storage-Class Specifiers
 
 ## Tech stack
 
