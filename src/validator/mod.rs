@@ -74,7 +74,8 @@ fn resolve_statement(stmt: &mut Stmt, variable_map: &mut VariableMap) -> Result<
          resolve_statement(then_stmt, variable_map)?;
       },
       Stmt::Compound(block) => {
-         resolve_block(block, variable_map)?;
+         let mut new_variable_map = copy_variable_map(variable_map);
+         resolve_block(block, &mut new_variable_map)?;
       }
    }
    Ok(())
@@ -82,7 +83,7 @@ fn resolve_statement(stmt: &mut Stmt, variable_map: &mut VariableMap) -> Result<
 
 fn resolve_declaration(decl: &mut Decl, variable_map: &mut VariableMap) -> Result<()> {
    let Decl::Decl(name, initializer, line_number) = decl;
-   if variable_map.contains_key(name) {
+   if variable_map.contains_key(name) && variable_map.get(name).unwrap().1 == true {
       bail!(error::error(*line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
    }
    let unique_name = name_generator::uniquify_identifier(name);
