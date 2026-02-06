@@ -208,7 +208,7 @@ impl Parser {
       self.consume(TokenType::OpenBrace)?;
       let block = self.block()?;
       self.consume(TokenType::CloseBrace)?;
-      Ok(Program::FunctionDefinition(FunctionDefinition::Function(name, block)))
+      Ok(Program::FunctionDefinition(FunctionDefinition { name, body: block }))
    }
 
    fn block(&mut self) -> Result<Block> {

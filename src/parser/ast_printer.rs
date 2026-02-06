@@ -3,7 +3,7 @@ use crate::parser::ast::*;
 pub fn print_ast(ast: &AST) {
    println!("AST:");
    match &ast.program {
-      Program::FunctionDefinition(FunctionDefinition::Function(name, body))  => {
+      Program::FunctionDefinition(FunctionDefinition { name, body })  => {
          println!("Function: {}", name);
          print_block(body);
       }

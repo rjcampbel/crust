@@ -33,7 +33,7 @@ impl Validator {
 
    fn resolve_program(&mut self, program: &mut Program) -> Result<()> {
       match program {
-         Program::FunctionDefinition(FunctionDefinition::Function(_, body)) => {
+         Program::FunctionDefinition(FunctionDefinition{ name: _, body }) => {
             self.resolve_function(body)?;
             Ok(())
          }

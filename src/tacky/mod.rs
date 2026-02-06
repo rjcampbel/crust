@@ -29,7 +29,7 @@ pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyAST> {
 
 fn gen_tacky_program(ast: AST) -> Result<TackyAST> {
     match ast.program {
-        Program::FunctionDefinition(FunctionDefinition::Function(name, body)) => {
+        Program::FunctionDefinition(FunctionDefinition { name, body}) => {
             let program = gen_tacky_function(name, body)?;
             Ok(TackyAST { program })
         }
