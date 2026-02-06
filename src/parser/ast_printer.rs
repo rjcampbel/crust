@@ -5,15 +5,19 @@ pub fn print_ast(ast: &AST) {
    match &ast.program {
       Program::FunctionDefinition(FunctionDefinition::Function(name, body))  => {
          println!("Function: {}", name);
-         for item in body {
-            match item {
-               BlockItem::Stmt(s) => print_stmt(s, 0),
-               BlockItem::Decl(Decl::Decl(name, expr, _)) => {
-                  println!("Decl: {}", name);
-                  if let Some(e) = expr {
-                     print_expr(e, 4);
-                  }
-               }
+         print_block(body);
+      }
+   }
+}
+
+fn print_block(block: &Block) {
+   for item in &block.items {
+      match item {
+         BlockItem::Stmt(s) => print_stmt(&s, 0),
+         BlockItem::Decl(Decl::Decl(name, expr, _)) => {
+            println!("Decl: {}", name);
+            if let Some(e) = expr {
+               print_expr(&e, 4);
             }
          }
       }
@@ -41,6 +45,10 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          if let Some(stmt) = else_stmt {
             print_stmt(&stmt, indent + 4);
          }
+      },
+      Stmt::Compound(block) => {
+         print!("{}Compound:", indentation);
+         print_block(block);
       }
    }
 }

@@ -40,8 +40,8 @@ impl Validator {
       }
    }
 
-   fn resolve_function(&mut self, body: &mut Vec<BlockItem>) -> Result<()> {
-      for block_item in &mut *body {
+   fn resolve_function(&mut self, body: &mut Block) -> Result<()> {
+      for block_item in &mut *body.items {
          self.validate_block_item(block_item)?;
       }
       Ok(())
@@ -74,6 +74,11 @@ impl Validator {
             }
             self.resolve_expr(expr)?;
             self.resolve_statement(then_stmt)?;
+         },
+         Stmt::Compound(block) => {
+            for block_item in &mut *block.items {
+               self.validate_block_item(block_item)?;
+            }
          }
       }
       Ok(())

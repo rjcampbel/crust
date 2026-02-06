@@ -206,18 +206,18 @@ impl Parser {
       self.consume(TokenType::Void)?;
       self.consume(TokenType::CloseParen)?;
       self.consume(TokenType::OpenBrace)?;
-      let body = self.body()?;
+      let block = self.block()?;
       self.consume(TokenType::CloseBrace)?;
-      Ok(Program::FunctionDefinition(FunctionDefinition::Function(name, body)))
+      Ok(Program::FunctionDefinition(FunctionDefinition::Function(name, block)))
    }
 
-   fn body(&mut self) -> Result<Vec<BlockItem>> {
-      let mut body = Vec::new();
+   fn block(&mut self) -> Result<Block> {
+      let mut items = Vec::new();
       while !self.at_end() && self.peek().as_ref().unwrap().token_type != TokenType::CloseBrace {
          let block_item = self.block_item()?;
-         body.push(block_item);
+         items.push(block_item);
       }
-      Ok(body)
+      Ok(Block{ items })
    }
 
    fn block_item(&mut self) -> Result<BlockItem> {
@@ -284,6 +284,12 @@ impl Parser {
             };
             return Ok(Stmt::If(expr, Box::new(then_stmt), else_stmt));
          },
+         TokenType::OpenBrace => {
+            self.advance();
+            let block = self.block()?;
+            self.consume(TokenType::CloseBrace)?;
+            return Ok(Stmt::Compound(block));
+         }
          _ => {
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::Semicolon)?;

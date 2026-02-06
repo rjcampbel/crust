@@ -36,10 +36,10 @@ fn gen_tacky_program(ast: AST) -> Result<TackyAST> {
     }
 }
 
-fn gen_tacky_function(name: String, block_items: Vec<ast::BlockItem>) -> Result<TackyProgram> {
+fn gen_tacky_function(name: String, body: ast::Block) -> Result<TackyProgram> {
     let mut instrs = Vec::new();
-    for block_item in block_items {
-        match block_item {
+    for item in body.items {
+        match item {
             BlockItem::Decl(decl) => {
                 generate_decl_instrs(decl, &mut instrs)?;
             },
@@ -87,6 +87,18 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
                 generate_stmt_instrs(*s, instrs)?;
             }
             instrs.push(Instr::Label(end_label))
+        },
+        Stmt::Compound(block) => {
+            for item in block.items {
+                match item {
+                    BlockItem::Decl(decl) => {
+                        generate_decl_instrs(decl, instrs)?;
+                    },
+                    BlockItem::Stmt(stmt) => {
+                        generate_stmt_instrs(stmt, instrs)?;
+                    }
+                }
+            }
         }
     };
     Ok(())

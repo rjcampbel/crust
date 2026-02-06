@@ -6,13 +6,17 @@ pub enum Program {
    FunctionDefinition(FunctionDefinition),
 }
 
-pub enum FunctionDefinition {
-   Function(String, Vec<BlockItem>),
-}
-
 pub enum BlockItem {
    Stmt(Stmt),
    Decl(Decl)
+}
+
+pub struct Block {
+   pub items: Vec<BlockItem>,
+}
+
+pub enum FunctionDefinition {
+   Function(String, Block),
 }
 
 pub enum Decl {
@@ -23,6 +27,7 @@ pub enum Stmt {
    Return(Expr),
    Expression(Expr),
    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
+   Compound(Block),
    Null,
 }
 
