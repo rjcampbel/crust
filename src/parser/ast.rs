@@ -28,10 +28,10 @@ pub enum Stmt {
 
 #[derive(Clone)]
 pub enum Expr {
-   Integer(i64, usize),
+   Integer(i64),
    Var(String, usize),
-   UnaryOp(UnaryOp, Box<Expr>, usize),
-   BinaryOp(BinaryOp, Box<Expr>, Box<Expr>, usize),
+   UnaryOp(UnaryOp, Box<Expr>),
+   BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
    Assignment(Box<Expr>, Box<Expr>, usize),
    Conditional(Box<Expr>, Box<Expr>, Box<Expr>)
 }

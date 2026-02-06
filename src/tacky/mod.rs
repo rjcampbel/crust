@@ -100,10 +100,10 @@ fn gen_return_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<()> {
 
 fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
     match expr {
-        Expr::Integer(i, _) => {
+        Expr::Integer(i) => {
             Ok(Val::Integer(i))
         },
-        Expr::UnaryOp(operator, expr, _) => {
+        Expr::UnaryOp(operator, expr) => {
             let src = gen_expr_instrs(*expr, instrs)?;
             let dest = Val::Var(name_generator::gen_tmp_name());
             let unary_op = match operator {
@@ -114,13 +114,13 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             instrs.push(Instr::Unary(unary_op, src, dest.clone()));
             Ok(dest)
         },
-        Expr::BinaryOp(ast::BinaryOp::LogicalAnd, left, right, _) => {
+        Expr::BinaryOp(ast::BinaryOp::LogicalAnd, left, right) => {
             gen_logical_and(left, right, instrs)
         },
-        Expr::BinaryOp(ast::BinaryOp::LogicalOr, left, right, _) => {
+        Expr::BinaryOp(ast::BinaryOp::LogicalOr, left, right) => {
             gen_logical_or(left, right, instrs)
         },
-        Expr::BinaryOp(operator, left, right, _) => {
+        Expr::BinaryOp(operator, left, right) => {
             let left = gen_expr_instrs(*left, instrs)?;
             let right = gen_expr_instrs(*right, instrs)?;
             let dest = Val::Var(name_generator::gen_tmp_name());

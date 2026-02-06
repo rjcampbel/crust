@@ -111,12 +111,12 @@ impl Validator {
                bail!(error::error(*line_number, format!("Undeclared variable {}", name), error::ErrorType::SemanticError))
             }
          },
-         Expr::BinaryOp(_, left, right, _) => {
+         Expr::BinaryOp(_, left, right) => {
             self.resolve_expr(left)?;
             self.resolve_expr(right)?;
          },
-         Expr::Integer(_, _) => (),
-         Expr::UnaryOp(_, expr, _) => {
+         Expr::Integer(_) => (),
+         Expr::UnaryOp(_, expr) => {
             self.resolve_expr(expr)?;
          },
          Expr::Conditional(condition, middle, right) => {

@@ -48,13 +48,13 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
 fn print_expr(expr: &Expr, indent: usize) {
    let indentation = " ".repeat(indent);
    match expr {
-      Expr::Integer(value, _) => {
+      Expr::Integer(value) => {
          println!("{}Integer: {}", indentation, value);
       },
       Expr::Var(identifier, _) => {
          println!("{}Identifier: {}", indentation, identifier);
       }
-      Expr::UnaryOp(operator, expr, _) => {
+      Expr::UnaryOp(operator, expr) => {
          match operator {
             UnaryOp::Complement => {
                println!("{}UnaryOp: Complement", indentation);
@@ -68,7 +68,7 @@ fn print_expr(expr: &Expr, indent: usize) {
          }
          print_expr(expr, indent + 2);
       },
-      Expr::BinaryOp(operator, left, right, _) => {
+      Expr::BinaryOp(operator, left, right) => {
          match operator {
             BinaryOp::Add => {
                println!("{}BinaryOp: Add", indentation);

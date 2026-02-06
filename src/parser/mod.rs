@@ -297,11 +297,10 @@ impl Parser {
 
       while self.peek().as_ref().unwrap().token_type.precedence() >= min_prec {
          if self.match_binary_op() {
-            let line_number = self.previous().as_ref().unwrap().line_number;
             let next_prec = self.previous().as_ref().unwrap().token_type.precedence().increment();
             let binary_op = self.previous().as_ref().unwrap().token_type.to_binary_op();
             let right = self.expression(next_prec)?;
-            left = Expr::BinaryOp(binary_op, Box::new(left), Box::new(right), line_number);
+            left = Expr::BinaryOp(binary_op, Box::new(left), Box::new(right));
          } else if self.match_assignment_op() {
             match self.previous().as_ref().unwrap().token_type {
                TokenType::Equal => {
@@ -331,15 +330,14 @@ impl Parser {
    fn compound_assignment(&mut self, op: BinaryOp, left: Expr) -> Result<Expr> {
       let line_number = self.previous().as_ref().unwrap().line_number;
       let prec = self.previous().as_ref().unwrap().token_type.precedence();
-      let right = Expr::BinaryOp(op, Box::new(left.clone()), Box::new(self.expression(prec)?), line_number);
+      let right = Expr::BinaryOp(op, Box::new(left.clone()), Box::new(self.expression(prec)?));
       Ok(Expr::Assignment(Box::new(left), Box::new(right), line_number))
    }
 
    fn unary(&mut self) -> Result<Expr> {
-      let line_number = self.previous().as_ref().unwrap().line_number;
       let unary_op = self.previous().as_ref().unwrap().token_type.to_unary_op();
       let expr = self.factor()?;
-      Ok(Expr::UnaryOp(unary_op, Box::new(expr), line_number))
+      Ok(Expr::UnaryOp(unary_op, Box::new(expr)))
    }
 
    fn factor(&mut self) -> Result<Expr> {
@@ -348,9 +346,8 @@ impl Parser {
       } else {
          match self.peek().as_ref().unwrap().token_type {
             TokenType::Integer(i) => {
-               let line_number = self.peek().as_ref().unwrap().line_number;
                self.advance();
-               Ok(Expr::Integer(i, line_number))
+               Ok(Expr::Integer(i))
             },
             TokenType::OpenParen => {
                self.advance();
