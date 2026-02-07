@@ -50,6 +50,11 @@ pub enum TokenType {
    Return,
    If,
    Else,
+   Do,
+   While,
+   For,
+   Break,
+   Continue,
 
    // Constands/Identifiers
    Integer(i64),
@@ -124,6 +129,11 @@ impl fmt::Display for TokenType {
          TokenType::Else => write!(f, "ELSE"),
          TokenType::Question => write!(f, "?"),
          TokenType::Colon => write!(f, ":"),
+         TokenType::Do => write!(f, "DO"),
+         TokenType::While => write!(f, "WHILE"),
+         TokenType::For => write!(f, "FOR"),
+         TokenType::Break => write!(f, "BREAK"),
+         TokenType::Continue => write!(f, "CONTINUE"),
          TokenType::EOF => write!(f, "EOF"),
       }
    }

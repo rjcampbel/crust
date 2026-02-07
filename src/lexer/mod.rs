@@ -268,6 +268,11 @@ fn to_keyword(identifier: &str) -> Option<TokenType> {
       "return" => Some(TokenType::Return),
       "if" => Some(TokenType::If),
       "else" => Some(TokenType::Else),
+      "do" => Some(TokenType::Do),
+      "while" => Some(TokenType::While),
+      "for" => Some(TokenType::For),
+      "break" => Some(TokenType::Break),
+      "continue" => Some(TokenType::Continue),
       _ => None
    }
 }
