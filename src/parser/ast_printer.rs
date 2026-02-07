@@ -59,24 +59,24 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          print!("{}Compound:", indentation);
          print_block(block, indent + INDENT_SIZE);
       },
-      Stmt::Break => {
+      Stmt::Break(_) => {
          println!("{}Break", indentation);
       },
-      Stmt::Continue => {
+      Stmt::Continue(_) => {
          println!("{}Continue", indentation);
       },
-      Stmt::While(expr, body) => {
+      Stmt::While(expr, body, _) => {
          print!("{}While ", indentation);
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(body, indent + INDENT_SIZE);
       },
-      Stmt::DoWhile(body, expr) => {
+      Stmt::DoWhile(body, expr , _) => {
          print!("{}DoWhile:", indentation);
          print_stmt(body, indent + INDENT_SIZE);
          print!("{}While ", indentation);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::For(init, condition, increment, body) => {
+      Stmt::For(init, condition, increment, body, _) => {
          print!("{}For:", indentation);
          match init {
             ForInit::Decl(decl) => {

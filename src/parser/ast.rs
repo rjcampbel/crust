@@ -34,11 +34,11 @@ pub enum Stmt {
    Expression(Expr),
    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
    Compound(Block),
-   Break,
-   Continue,
-   While(Expr, Box<Stmt>),
-   DoWhile(Box<Stmt>, Expr),
-   For(ForInit, Option<Expr>, Option<Expr>, Box<Stmt>),
+   Break(String),
+   Continue(String),
+   While(Expr, Box<Stmt>, String),
+   DoWhile(Box<Stmt>, Expr, String),
+   For(ForInit, Option<Expr>, Option<Expr>, Box<Stmt>, String),
    Null,
 }
 
