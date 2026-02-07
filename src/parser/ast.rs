@@ -26,7 +26,7 @@ pub enum Decl {
 
 pub enum ForInit {
    Decl(Decl),
-   Expr(Option<Expr>),
+   Expr(Expr),
 }
 
 pub enum Stmt {
@@ -38,7 +38,7 @@ pub enum Stmt {
    Continue(String),
    While(Expr, Box<Stmt>, String),
    DoWhile(Box<Stmt>, Expr, String),
-   For(ForInit, Option<Expr>, Option<Expr>, Box<Stmt>, String),
+   For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, String),
    Null,
 }
 

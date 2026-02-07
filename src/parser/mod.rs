@@ -223,13 +223,13 @@ impl Parser {
    fn block_item(&mut self) -> Result<BlockItem> {
       match self.peek().as_ref().unwrap().token_type {
          TokenType::Int => {
-            self.declaration()
+            Ok(BlockItem::Decl(self.declaration()?))
          },
          _ => Ok(BlockItem::Stmt(self.statement()?))
       }
    }
 
-   fn declaration(&mut self) -> Result<BlockItem> {
+   fn declaration(&mut self) -> Result<Decl> {
       self.consume(TokenType::Int)?;
       let name = self.identifier()?;
       let expr = if self.peek().as_ref().unwrap().token_type == TokenType::Equal {
@@ -240,7 +240,7 @@ impl Parser {
       };
       let line = self.peek().as_ref().unwrap().line_number;
       self.consume(TokenType::Semicolon)?;
-      Ok(BlockItem::Decl(Decl::Decl(name, expr, line)))
+      Ok(Decl::Decl(name, expr, line))
    }
 
    fn identifier(&mut self) -> Result<String> {
@@ -289,12 +289,75 @@ impl Parser {
             let block = self.block()?;
             self.consume(TokenType::CloseBrace)?;
             return Ok(Stmt::Compound(block));
-         }
+         },
+         TokenType::Break => {
+            self.advance();
+            self.consume(TokenType::Semicolon)?;
+            return Ok(Stmt::Break("".to_string()));
+         },
+         TokenType::Continue => {
+            self.advance();
+            self.consume(TokenType::Semicolon)?;
+            return Ok(Stmt::Continue("".to_string()));
+         },
+         TokenType::While => {
+            self.advance();
+            self.consume(TokenType::OpenParen)?;
+            let condition = self.expression(Precedence::None)?;
+            self.consume(TokenType::CloseParen)?;
+            let body = self.statement()?;
+            return Ok(Stmt::While(condition, Box::new(body), "".to_string()));
+         },
+         TokenType::Do => {
+            self.advance();
+            let body = self.statement()?;
+            self.consume(TokenType::While)?;
+            self.consume(TokenType::OpenParen)?;
+            let condition = self.expression(Precedence::None)?;
+            self.consume(TokenType::CloseParen)?;
+            self.consume(TokenType::Semicolon)?;
+            return Ok(Stmt::DoWhile(Box::new(body), condition, "".to_string()));
+         },
+         TokenType::For => {
+            self.advance();
+            self.consume(TokenType::OpenParen)?;
+            let for_init = self.for_init()?;
+            let condition = self.optional_expression(TokenType::Semicolon, Precedence::None)?;
+            self.consume(TokenType::Semicolon)?;
+            let post = self.optional_expression(TokenType::CloseParen, Precedence::None)?;
+            self.consume(TokenType::CloseParen)?;
+            let body = self.statement()?;
+            Ok(Stmt::For(for_init, condition, post, Box::new(body), "".to_string()))
+         },
          _ => {
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::Semicolon)?;
             return Ok(Stmt::Expression(expr));
          }
+      }
+   }
+
+   fn for_init(&mut self) -> Result<Option<ForInit>> {
+      if self.peek().as_ref().unwrap().token_type == TokenType::Semicolon {
+         self.advance();
+         Ok(None)
+      } else {
+         match self.peek().as_ref().unwrap().token_type {
+            TokenType::Int => Ok(Some(ForInit::Decl(self.declaration()?))),
+            _ => {
+               let init = Some(ForInit::Expr(self.expression(Precedence::None)?));
+               self.consume(TokenType::Semicolon)?;
+               Ok(init)
+            }
+         }
+      }
+   }
+
+   fn optional_expression(&mut self, delimiter: TokenType, min_prec: Precedence) -> Result<Option<Expr>> {
+      if self.peek().as_ref().unwrap().token_type == delimiter {
+         Ok(None)
+      } else {
+         Ok(Some(self.expression(min_prec)?))
       }
    }
 
