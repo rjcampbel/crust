@@ -99,7 +99,8 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
                     }
                 }
             }
-        }
+        },
+        _ => todo!()
     };
     Ok(())
 }

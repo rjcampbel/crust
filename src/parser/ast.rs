@@ -20,16 +20,26 @@ pub enum BlockItem {
    Decl(Decl)
 }
 
+pub enum Decl {
+   Decl(String, Option<Expr>, usize),
+}
+
+pub enum ForInit {
+   Decl(Decl),
+   Expr(Option<Expr>),
+}
+
 pub enum Stmt {
    Return(Expr),
    Expression(Expr),
    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
    Compound(Block),
+   Break,
+   Continue,
+   While(Expr, Box<Stmt>),
+   DoWhile(Box<Stmt>, Expr),
+   For(ForInit, Option<Expr>, Option<Expr>, Box<Stmt>),
    Null,
-}
-
-pub enum Decl {
-   Decl(String, Option<Expr>, usize),
 }
 
 #[derive(Clone)]

@@ -1,24 +1,33 @@
 use crate::parser::ast::*;
 
+static INDENT_SIZE: usize = 2;
+
 pub fn print_ast(ast: &AST) {
    println!("AST:");
    match &ast.program {
       Program::FunctionDefinition(FunctionDefinition { name, body })  => {
          println!("Function: {}", name);
-         print_block(body);
+         print_block(body, INDENT_SIZE);
       }
    }
 }
 
-fn print_block(block: &Block) {
+fn print_block(block: &Block, indent: usize) {
    for item in &block.items {
       match item {
-         BlockItem::Stmt(s) => print_stmt(&s, 0),
-         BlockItem::Decl(Decl::Decl(name, expr, _)) => {
-            println!("Decl: {}", name);
-            if let Some(e) = expr {
-               print_expr(&e, 4);
-            }
+         BlockItem::Stmt(s) => print_stmt(&s, indent + 2),
+         BlockItem::Decl(decl) => print_decl(decl, indent + INDENT_SIZE),
+      }
+   }
+}
+
+fn print_decl(decl: &Decl, indent: usize) {
+   let indentation = " ".repeat(indent);
+   match decl {
+      Decl::Decl(name, expr, _) => {
+         println!("{}Decl: {}", indentation, name);
+         if let Some(e) = expr {
+            print_expr(&e, indent + INDENT_SIZE);
          }
       }
    }
@@ -29,26 +38,67 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
    match stmt {
       Stmt::Return(expr) => {
          println!("{}Return:", indentation);
-         print_expr(expr, indent + 4);
+         print_expr(expr, indent + INDENT_SIZE);
       },
       Stmt::Expression(expr) => {
          println!("{}Expression:", indentation);
-         print_expr(expr, indent + 4);
+         print_expr(expr, indent + INDENT_SIZE);
       },
       Stmt::Null => {
          println!("{}NULL", indentation);
       },
       Stmt::If(expr, then, else_stmt) => {
          print!("{}If ", indentation);
-         print_expr(expr, 0);
-         print_stmt(then, indent + 4);
+         print_expr(expr, indent + INDENT_SIZE);
+         print_stmt(then, indent + INDENT_SIZE);
          if let Some(stmt) = else_stmt {
-            print_stmt(&stmt, indent + 4);
+            print_stmt(&stmt, indent + INDENT_SIZE);
          }
       },
       Stmt::Compound(block) => {
          print!("{}Compound:", indentation);
-         print_block(block);
+         print_block(block, indent + INDENT_SIZE);
+      },
+      Stmt::Break => {
+         println!("{}Break", indentation);
+      },
+      Stmt::Continue => {
+         println!("{}Continue", indentation);
+      },
+      Stmt::While(expr, body) => {
+         print!("{}While ", indentation);
+         print_expr(expr, indent + INDENT_SIZE);
+         print_stmt(body, indent + INDENT_SIZE);
+      },
+      Stmt::DoWhile(body, expr) => {
+         print!("{}DoWhile:", indentation);
+         print_stmt(body, indent + INDENT_SIZE);
+         print!("{}While ", indentation);
+         print_expr(expr, indent + INDENT_SIZE);
+      },
+      Stmt::For(init, condition, increment, body) => {
+         print!("{}For:", indentation);
+         match init {
+            ForInit::Decl(decl) => {
+               print!("{}Init Decl: ", indentation);
+               print_decl(decl, indent + INDENT_SIZE);
+            },
+            ForInit::Expr(expr) => {
+               print!("{}Init Expr: ", indentation);
+               if let Some(e) = expr {
+                  print_expr(e, indent + INDENT_SIZE);
+               }
+            }
+         }
+         if let Some(condition) = condition {
+            print!("{}Condition: ", indentation);
+            print_expr(condition, indent + INDENT_SIZE);
+         }
+         if let Some(increment) = increment {
+            print!("{}Increment: ", indentation);
+            print_expr(increment, indent + INDENT_SIZE);
+         }
+         print_stmt(body, indent + INDENT_SIZE);
       }
    }
 }

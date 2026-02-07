@@ -76,7 +76,8 @@ fn resolve_statement(stmt: &mut Stmt, variable_map: &mut VariableMap) -> Result<
       Stmt::Compound(block) => {
          let mut new_variable_map = copy_variable_map(variable_map);
          resolve_block(block, &mut new_variable_map)?;
-      }
+      },
+      _ => todo!()
    }
    Ok(())
 }
