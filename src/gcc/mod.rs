@@ -22,13 +22,23 @@ pub fn preprocess(source: &Path, dest: &Path) -> Result<()> {
    Ok(())
 }
 
-pub fn assemble(source: &Path, output: &Path) -> Result<()> {
+pub fn assemble(source: &Path, additional_args: &mut Vec<String>) -> Result<()> {
+   let output_ext = if additional_args.contains(&"-c".to_string()) {
+      "o"
+   } else {
+      ""
+   };
+
+   let output = source.with_extension(output_ext);
+   let mut args: Vec<String> = vec![
+         source.to_string_lossy().into_owned(),
+         "-o".to_string(),
+         output.to_string_lossy().into_owned()
+      ];
+
+   args.append(additional_args);
    let output = Command::new("gcc")
-      .args([
-         source.to_string_lossy().as_ref(),
-         "-o",
-         output.to_string_lossy().as_ref()
-      ])
+      .args(args)
       .output()?;
 
    ensure!(

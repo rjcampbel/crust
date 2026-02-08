@@ -30,19 +30,19 @@ struct Cli {
     #[arg(long, short)]
     lex: bool,
 
-    /// Run only the lexer and parser
+    /// Run lexer and parser
     #[arg(long, short)]
     parse: bool,
 
-    /// Run only the lexer, parser, and validator
+    /// Run lexer, parser, and validator
     #[arg(long, short)]
     validate: bool,
 
-    /// Run only the lexer, parser, validator, and tacky generation
+    /// Run lexer, parser, validator, and IR generation
     #[arg(long, short)]
     tacky: bool,
 
-    /// Run only the lexer, parser, validator, tacky generation, and assembly generation
+    /// Run lexer, parser, validator, IR generation, and assembly generation
     #[arg(long, short)]
     codegen: bool,
 
@@ -50,21 +50,25 @@ struct Cli {
     #[arg(long)]
     print_tokens: bool,
 
-    /// Print the AST after parsing
+    /// Print the AST after parsing and validating
     #[arg(long)]
     print_ast: bool,
 
-    /// Print the tacky ast
+    /// Print the IR
     #[arg(long)]
     print_tacky: bool,
 
-    /// Print the assembly AST after code generation
+    /// Print the assembly
     #[arg(long)]
     print_assembly: bool,
+
+    /// Additional arguments to pass to the assembler
+    #[arg(long, allow_hyphen_values = true, num_args = 0..)]
+    args: Vec<String>,
 }
 
 fn main() -> Result<()> {
-    let args = Cli::parse();
+    let mut args = Cli::parse();
     let mut compiler = Compiler::new(args.source)?;
 
     if args.lex {
@@ -92,7 +96,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    compiler.compile(args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly)?;
+    compiler.compile(args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly, &mut args.args)?;
 
     Ok(())
 }

@@ -1,4 +1,4 @@
 int main(void) {
-    if (1)
+    while (1)
         break;
 }
