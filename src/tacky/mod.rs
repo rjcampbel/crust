@@ -1,9 +1,9 @@
 pub mod tacky;
 mod tacky_printer;
 
-use crate::name_generator;
+use crate::name_generator::{self, gen_label};
 use crate::parser::ast;
-use crate::parser::ast::{AST, BlockItem, Expr, FunctionDefinition, Program, Stmt};
+use crate::parser::ast::{AST, BlockItem, Expr, FunctionDefinition, Program, Stmt, ForInit};
 use tacky::*;
 
 use anyhow::bail;
@@ -92,7 +92,58 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
                 }
             }
         },
-        _ => todo!()
+        Stmt::Break(label) => {
+            instrs.push(Instr::Jump("break_".to_string() + &label));
+        },
+        Stmt::Continue(label) => {
+            instrs.push(Instr::Jump("continue_".to_string() + &label));
+        },
+        Stmt::DoWhile(body, condition, label) => {
+            let start_label = gen_label("start");
+            instrs.push(Instr::Label(start_label.clone()));
+            generate_stmt_instrs(*body, instrs)?;
+            instrs.push(Instr::Label("continue_".to_string() + &label));
+            let condition = gen_expr_instrs(condition, instrs)?;
+            instrs.push(Instr::JumpIfNotZero(condition, start_label));
+            instrs.push(Instr::Label("break_".to_string() + &label));
+        },
+        Stmt::While(condition, body, label) => {
+            let continue_label = "continue_".to_string() + &label;
+            let break_label = "break_".to_string() + &label;
+            instrs.push(Instr::Label(continue_label.clone()));
+            let condition = gen_expr_instrs(condition, instrs)?;
+            instrs.push(Instr::JumpIfZero(condition, break_label.clone()));
+            generate_stmt_instrs(*body, instrs)?;
+            instrs.push(Instr::Jump(continue_label));
+            instrs.push(Instr::Label(break_label));
+        },
+        Stmt::For(init, condition, post, body, label) => {
+            let start_label = gen_label("start");
+            let continue_label = "continue_".to_string() + &label;
+            let break_label = "break_".to_string() + &label;
+            if let Some(init) = init {
+                match init {
+                    ForInit::Decl(d) => {
+                        generate_decl_instrs(d, instrs)?;
+                    },
+                    ForInit::Expr(e) => {
+                        gen_expr_instrs(e, instrs)?;
+                    }
+                }
+            }
+            instrs.push(Instr::Label(start_label.clone()));
+            if let Some(condition) = condition {
+                let condition = gen_expr_instrs(condition, instrs)?;
+                instrs.push(Instr::JumpIfZero(condition, break_label.clone()));
+            }
+            generate_stmt_instrs(*body, instrs)?;
+            instrs.push(Instr::Label(continue_label));
+            if let Some(post) = post {
+                gen_expr_instrs(post, instrs)?;
+            }
+            instrs.push(Instr::Jump(start_label));
+            instrs.push(Instr::Label(break_label));
+        }
     };
     Ok(())
 }
