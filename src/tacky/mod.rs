@@ -8,14 +8,6 @@ use tacky::*;
 
 use anyhow::bail;
 use anyhow::Result;
-use std::sync::atomic::{Ordering, AtomicUsize};
-
-static LBL_COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-fn gen_label(name: &str) -> String {
-    let counter = LBL_COUNTER.fetch_add(1, Ordering::SeqCst);
-    format!("{}.{}", name, counter)
-}
 
 pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyAST> {
     let tacky_ast = gen_tacky_program(ast)?;
@@ -76,8 +68,8 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
         },
         Stmt::Null => (),
         Stmt::If(condition, then_stmt, else_stmt) => {
-            let end_label = gen_label("end");
-            let else_label = gen_label("else");
+            let end_label = name_generator::gen_label("end");
+            let else_label = name_generator::gen_label("else");
             let condition: Val = gen_expr_instrs(condition, instrs)?;
             instrs.push(Instr::JumpIfZero(condition, else_label.clone()));
             generate_stmt_instrs(*then_stmt, instrs)?;
@@ -175,8 +167,8 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             }
         },
         Expr::Conditional(condition, middle, right) => {
-            let e2_label = gen_label("e2");
-            let end_label = gen_label("end");
+            let e2_label = name_generator::gen_label("e2");
+            let end_label = name_generator::gen_label("end");
             let dest = Val::Var(name_generator::gen_tmp_name());
 
             let condition = gen_expr_instrs(*condition, instrs)?;
@@ -196,8 +188,8 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
 
 fn gen_logical_and(left: Box<Expr>, right: Box<Expr>, instrs: &mut Vec<Instr>) -> Result<Val> {
     let left = gen_expr_instrs(*left, instrs)?;
-    let false_label = gen_label("false");
-    let end_label = gen_label("end");
+    let false_label = name_generator::gen_label("false");
+    let end_label = name_generator::gen_label("end");
     instrs.push(Instr::JumpIfZero(left, false_label.clone()));
     let right = gen_expr_instrs(*right, instrs)?;
     instrs.push(Instr::JumpIfZero(right, false_label.clone()));
@@ -212,8 +204,8 @@ fn gen_logical_and(left: Box<Expr>, right: Box<Expr>, instrs: &mut Vec<Instr>) -
 
 fn gen_logical_or(left: Box<Expr>, right: Box<Expr>, instrs: &mut Vec<Instr>) -> Result<Val> {
     let left = gen_expr_instrs(*left, instrs)?;
-    let true_label = gen_label("true");
-    let end_label = gen_label("end");
+    let true_label = name_generator::gen_label("true");
+    let end_label = name_generator::gen_label("end");
     instrs.push(Instr::JumpIfNotZero(left, true_label.clone()));
     let right = gen_expr_instrs(*right, instrs)?;
     instrs.push(Instr::JumpIfNotZero(right, true_label.clone()));
