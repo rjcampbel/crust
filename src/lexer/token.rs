@@ -43,6 +43,7 @@ pub enum TokenType {
    RightShiftEqual,
    Question,
    Colon,
+   Comma,
 
    // Keywords
    Int,
@@ -134,6 +135,7 @@ impl fmt::Display for TokenType {
          TokenType::For => write!(f, "FOR"),
          TokenType::Break => write!(f, "BREAK"),
          TokenType::Continue => write!(f, "CONTINUE"),
+         TokenType::Comma => write!(f, ","),
          TokenType::EOF => write!(f, "EOF"),
       }
    }

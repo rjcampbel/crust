@@ -183,6 +183,7 @@ impl<'a> Lexer<'a> {
          },
          '?' => self.add_token(TokenType::Question),
          ':' => self.add_token(TokenType::Colon),
+         ',' => self.add_token(TokenType::Comma),
          '\n'=> self.line += 1,
          _ if c.is_whitespace() => (),
          _ if c.is_digit(10) => self.number()?,
