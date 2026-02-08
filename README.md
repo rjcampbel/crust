@@ -46,23 +46,27 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
   - [x] Equal, Not Equal
   - [x] Less Than, Greater Than, Less than or equal, Greater than or equal
   - [x] Function `main` returns result of any combination of supporter operator expressions
-- [x] Chapter 5 - Local variables
+- [ ] Chapter 5 - Local variables
   - [x] Local variable declarations
   - [x] Local variable assignments
   - [x] Local variable resolution
   - [x] Extra Credit: Compound assignment (+=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=)
   - [ ] Extra Credit: Prefix and postfix increment and decrement
   - [x] Function `main` supports local variables and returning any expression containing local variables and all supported operators
-- [x] Chapter 6 - If Statements and Conditional Expressions
+- [ ] Chapter 6 - If Statements and Conditional Expressions
   - [x] If/Else statements without compound statements
   - [x] Conditional (ternary) operator
-  - [x] Function `main` supports all previous chapters plus if and conditional statements and expressions 
+  - [x] Function `main` supports all previous chapters plus if and conditional statements and expressions
+  - [x] Extra Credit: `goto`
 - [x] Chapter 7 - Compound statements
   - [x] Nested scopes 
   - [x] Variable scope resolutions
   - [x] If statements with compound statements
   - [x] Function `main` can now include arbitrary levels of nested scopes 
 - [ ] Chapter 8 - Loops
+  - [x] `while`, `do`...`while`, `for` loops
+  - [x] `continue`, `break`
+  - [ ] Extra Credit: `switch` statements
 - [ ] Chapter 9 - Functions
 - [ ] Chapter 10 - File Scope Variable Declarations and Storage-Class Specifiers
 
