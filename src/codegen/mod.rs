@@ -3,7 +3,7 @@ mod assembly_printer;
 mod stack_allocator;
 
 use crate::codegen::assembly::*;
-use crate::tacky::tacky::{BinaryOp, Instr, UnaryOp, TackyAST, TackyProgram, Val};
+use crate::tacky::tacky::{BinaryOp, Instr, UnaryOp, TackyAST, Val};
 
 use anyhow::Result;
 use assembly_printer::print_assembly_ast;
@@ -18,43 +18,36 @@ pub fn codegen(tacky: TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
 }
 
 fn generate_assembly(tacky: TackyAST) -> Result<AssemblyAST> {
-   let mut assembly = match tacky.program {
-      TackyProgram::Function(identifier, body)=> {
-         let function = generate_function(identifier, body)?;
-         Ok(AssemblyAST { program: function })
-      }
-   };
-
-   if let Ok(ref mut ass) = assembly {
-      replace_pseudoregisters(ass);
-      fixup_instructions(ass);
-   }
-   assembly
+   let function = generate_function(tacky.program.funcs[0].name.clone(), &tacky.program.funcs[0].instrs)?;
+   let mut assembly = AssemblyAST{ program: function };
+   replace_pseudoregisters(&mut assembly);
+   fixup_instructions(&mut assembly);
+   Ok(assembly)
 }
 
-fn generate_function(name: String, instrs: Vec<Instr>) -> Result<AssemblyProgram> {
+fn generate_function(name: String, instrs: &Vec<Instr>) -> Result<AssemblyProgram> {
    let instructions = generate_instructions(instrs)?;
    let assembly_function = AssemblyProgram::Function(name, instructions, StackAllocator::new());
    Ok(assembly_function)
 }
 
-fn generate_instructions(instrs: Vec<Instr>) -> Result<Vec<Instruction>> {
+fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
    let mut instructions = Vec::new();
    for instr in instrs {
       match instr {
          Instr::Return(val) => {
-            let ret = generate_operand(val);
+            let ret = generate_operand(val.clone());
             instructions.push(Instruction::Mov(ret, Operand::Register(Register::AX)));
             instructions.push(Instruction::Return);
          },
          Instr::Unary(UnaryOp::Not, src, dest) => {
-            instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(src)));
+            instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(src.clone())));
             instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest.clone())));
-            instructions.push(Instruction::SetCC(ConditionCode::E, generate_operand(dest)));
+            instructions.push(Instruction::SetCC(ConditionCode::E, generate_operand(dest.clone())));
          },
          Instr::Unary(operator, src, dest) => {
-            let src = generate_operand(src);
-            let dst = generate_operand(dest);
+            let src = generate_operand(src.clone());
+            let dst = generate_operand(dest.clone());
             let op = match operator {
                UnaryOp::Negate => {
                   assembly::UnaryOp::Neg
@@ -68,7 +61,7 @@ fn generate_instructions(instrs: Vec<Instr>) -> Result<Vec<Instruction>> {
             instructions.push(Instruction::Unary(op, dst));
          },
          Instr::Binary(operator @ (BinaryOp::Equal | BinaryOp::NotEqual | BinaryOp::LessThan | BinaryOp::LessOrEqual | BinaryOp::GreaterThan | BinaryOp::GreaterOrEqual), left, right, dest) => {
-            instructions.push(Instruction::Cmp(generate_operand(right), generate_operand(left)));
+            instructions.push(Instruction::Cmp(generate_operand(right.clone()), generate_operand(left.clone())));
             instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest.clone())));
             let code = match operator {
                BinaryOp::Equal => ConditionCode::E,
@@ -79,12 +72,12 @@ fn generate_instructions(instrs: Vec<Instr>) -> Result<Vec<Instruction>> {
                BinaryOp::GreaterOrEqual => ConditionCode::GE,
                _ => unreachable!()
             };
-            instructions.push(Instruction::SetCC(code, generate_operand(dest)));
+            instructions.push(Instruction::SetCC(code, generate_operand(dest.clone())));
          },
          Instr::Binary(operator, left, right, dest) => {
-            let left = generate_operand(left);
-            let right = generate_operand(right);
-            let dst = generate_operand(dest);
+            let left = generate_operand(left.clone());
+            let right = generate_operand(right.clone());
+            let dst = generate_operand(dest.clone());
             match operator {
                BinaryOp::Add => {
                   instructions.push(Instruction::Mov(left, dst.clone()));
@@ -134,21 +127,21 @@ fn generate_instructions(instrs: Vec<Instr>) -> Result<Vec<Instruction>> {
             };
          },
          Instr::Jump(label) => {
-            instructions.push(Instruction::Jmp(label));
+            instructions.push(Instruction::Jmp(label.clone()));
          },
          Instr::JumpIfNotZero(condition, target) => {
-            instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition)));
-            instructions.push(Instruction::JmpCC(ConditionCode::NE, target));
+            instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition.clone())));
+            instructions.push(Instruction::JmpCC(ConditionCode::NE, target.clone()));
          },
          Instr::JumpIfZero(condition, target) => {
-            instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition)));
-            instructions.push(Instruction::JmpCC(ConditionCode::E, target));
+            instructions.push(Instruction::Cmp(Operand::Immediate(0), generate_operand(condition.clone())));
+            instructions.push(Instruction::JmpCC(ConditionCode::E, target.clone()));
          },
          Instr::Copy(src, dest) => {
-            instructions.push(Instruction::Mov(generate_operand(src), generate_operand(dest)));
+            instructions.push(Instruction::Mov(generate_operand(src.clone()), generate_operand(dest.clone())));
          },
          Instr::Label(label) => {
-            instructions.push(Instruction::Label(label));
+            instructions.push(Instruction::Label(label.clone()));
          }
       }
    }

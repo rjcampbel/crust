@@ -18,12 +18,12 @@ pub fn validate(ast: &mut AST, print_ast: bool) -> Result<()> {
 }
 
 fn validate_program(program: &mut Program, variable_map: &mut VariableMap) -> Result<()> {
-   match program {
-      Program::FunctionDefinition(FunctionDefinition{ name: _, body }) => {
+   for decl in &mut program.func_decls {
+      if let Some(body) = &mut decl.body {
          validate_function(body, variable_map)?;
-         Ok(())
       }
    }
+   Ok(())
 }
 
 fn validate_function(body: &mut Block, variable_map: &mut VariableMap) -> Result<()> {
@@ -62,7 +62,9 @@ fn validate_block_item(item: &mut BlockItem, variable_map: &mut VariableMap) -> 
          resolve_statement(stmt, variable_map)?;
       },
       BlockItem::Decl(decl) => {
-         resolve_declaration(decl, variable_map)?;
+         if let Decl::VarDecl(decl) = decl {
+            resolve_declaration(decl, variable_map)?;
+         }
       }
    }
    Ok(())
@@ -179,18 +181,17 @@ fn resolve_optional_expr(expr: &mut Option<Expr>, variable_map: &mut VariableMap
    Ok(())
 }
 
-fn resolve_declaration(decl: &mut Decl, variable_map: &mut VariableMap) -> Result<()> {
-   let Decl::Decl(name, initializer, line_number) = decl;
-   if variable_map.contains_key(name) && variable_map.get(name).unwrap().1 == true {
-      bail!(error::error(*line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
+fn resolve_declaration(decl: &mut VarDecl, variable_map: &mut VariableMap) -> Result<()> {
+   if variable_map.contains_key(&decl.name) && variable_map.get(&decl.name).unwrap().1 == true {
+      bail!(error::error(decl.line, format!("\"{}\" already declared.", decl.name), error::ErrorType::SemanticError))
    }
-   let unique_name = name_generator::uniquify_identifier(name);
-   variable_map.insert(name.clone(), (unique_name.clone(), true));
+   let unique_name = name_generator::uniquify_identifier(&decl.name);
+   variable_map.insert(decl.name.clone(), (unique_name.clone(), true));
 
-   if let Some(expr) = initializer {
+   if let Some(expr) = &mut decl.init {
       resolve_expr(expr, variable_map)?;
    }
-   *name = unique_name;
+   decl.name = unique_name;
    Ok(())
 }
 
@@ -223,7 +224,8 @@ fn resolve_expr(expr: &mut Expr, variable_map: &mut VariableMap) -> Result<()> {
          resolve_expr(condition, variable_map)?;
          resolve_expr(middle, variable_map)?;
          resolve_expr(right, variable_map)?;
-      }
+      },
+      _ => todo!()
    }
    Ok(())
 }

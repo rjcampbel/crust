@@ -2,8 +2,14 @@ pub struct TackyAST {
    pub program: TackyProgram,
 }
 
-pub enum TackyProgram {
-   Function(String, Vec<Instr>)
+pub struct TackyProgram {
+   pub funcs: Vec<Function>,
+}
+
+pub struct Function {
+   pub name: String,
+   pub params: Vec<String>,
+   pub instrs: Vec<Instr>,
 }
 
 pub enum Instr {

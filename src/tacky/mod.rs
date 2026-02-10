@@ -3,7 +3,7 @@ mod tacky_printer;
 
 use crate::name_generator::{self, gen_label};
 use crate::parser::ast;
-use crate::parser::ast::{AST, BlockItem, Expr, FunctionDefinition, Program, Stmt, ForInit};
+use crate::parser::ast::{AST, BlockItem, Decl, Expr, Stmt, ForInit};
 use tacky::*;
 
 use anyhow::bail;
@@ -20,20 +20,23 @@ pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyAST> {
 }
 
 fn gen_tacky_program(ast: AST) -> Result<TackyAST> {
-    match ast.program {
-        Program::FunctionDefinition(FunctionDefinition { name, body}) => {
-            let program = gen_tacky_function(name, body)?;
-            Ok(TackyAST { program })
+    let mut funcs = Vec::new();
+    for func_decl in ast.program.func_decls {
+        if let Some(body) = func_decl.body {
+            funcs.push(gen_tacky_function(func_decl.name, body)?);
         }
     }
+    Ok(TackyAST{ program: TackyProgram { funcs }})
 }
 
-fn gen_tacky_function(name: String, body: ast::Block) -> Result<TackyProgram> {
+fn gen_tacky_function(name: String, body: ast::Block) -> Result<Function> {
     let mut instrs = Vec::new();
     for item in body.items {
         match item {
             BlockItem::Decl(decl) => {
-                generate_decl_instrs(decl, &mut instrs)?;
+                if let Decl::VarDecl(decl) = decl {
+                    generate_decl_instrs(decl, &mut instrs)?;
+                }
             },
             BlockItem::Stmt(stmt) => {
                 generate_stmt_instrs(stmt, &mut instrs)?;
@@ -44,16 +47,14 @@ fn gen_tacky_function(name: String, body: ast::Block) -> Result<TackyProgram> {
     // Push a dummy return instruction in case the function doesn't have a return statement
     instrs.push(Instr::Return(Val::Integer(0)));
 
-    Ok(TackyProgram::Function(name, instrs))
+    let params = vec!["foo".to_string()];
+    Ok(Function{name, params, instrs})
 }
 
-fn generate_decl_instrs(decl: ast::Decl, instrs: &mut Vec<Instr>) -> Result<()> {
-    match decl {
-        ast::Decl::Decl(name, Some(expr), _) => {
-            let val = gen_expr_instrs(expr, instrs)?;
-            instrs.push(Instr::Copy(val, Val::Var(name)));
-        },
-        _ => ()
+fn generate_decl_instrs(decl: ast::VarDecl, instrs: &mut Vec<Instr>) -> Result<()> {
+    if let Some(init) = decl.init {
+        let val = gen_expr_instrs(init, instrs)?;
+        instrs.push(Instr::Copy(val, Val::Var(decl.name)));
     }
     Ok(())
 }
@@ -84,7 +85,9 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
             for item in block.items {
                 match item {
                     BlockItem::Decl(decl) => {
-                        generate_decl_instrs(decl, instrs)?;
+                        if let Decl::VarDecl(d) = decl {
+                            generate_decl_instrs(d, instrs)?;
+                        }
                     },
                     BlockItem::Stmt(stmt) => {
                         generate_stmt_instrs(stmt, instrs)?;
@@ -232,7 +235,8 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             instrs.push(Instr::Copy(right, dest.clone()));
             instrs.push(Instr::Label(end_label));
             Ok(dest)
-        }
+        },
+        _ => todo!()
 
     }
 }

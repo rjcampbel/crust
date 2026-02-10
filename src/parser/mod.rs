@@ -4,7 +4,7 @@ pub mod ast_printer;
 use crate::error;
 use crate::lexer::token::{Token, TokenType};
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{bail, Result};
 use ast::*;
 use num::traits::FromPrimitive;
 
@@ -192,23 +192,56 @@ impl Parser {
    }
 
    fn program(&mut self) -> Result<Program> {
-      let function = self.function()?;
-      ensure!(self.at_end(), error::error(self.peek().as_ref().unwrap().line_number,
-                              format!("Expected end of file, found {}", self.peek().as_ref().unwrap().lexeme),
-                              error::ErrorType::SyntaxError));
-      Ok(function)
+      let mut func_decls: Vec<FuncDecl> = Vec::new();
+      while !self.at_end() {
+         if let Decl::FuncDel(d) = self.declaration()? {
+            func_decls.push(d);
+         }
+      }
+      Ok(Program{ func_decls })
    }
 
-   fn function(&mut self) -> Result<Program> {
-      self.consume(TokenType::Int)?;
-      let name = self.identifier()?;
+   fn function_decl(&mut self, name: String) -> Result<FuncDecl> {
       self.consume(TokenType::OpenParen)?;
-      self.consume(TokenType::Void)?;
+      let params = self.params()?;
       self.consume(TokenType::CloseParen)?;
-      self.consume(TokenType::OpenBrace)?;
-      let block = self.block()?;
-      self.consume(TokenType::CloseBrace)?;
-      Ok(Program::FunctionDefinition(FunctionDefinition { name, body: block }))
+
+      let block = if !self.match_token(TokenType::OpenBrace) {
+         self.consume(TokenType::Semicolon)?;
+         None
+      } else {
+         let block = self.block()?;
+         self.consume(TokenType::CloseBrace)?;
+         Some(block)
+      };
+      Ok(FuncDecl{ name, params, body: block })
+   }
+
+   fn variable_decl(&mut self, name: String) -> Result<VarDecl> {
+      let line = self.peek().as_ref().unwrap().line_number;
+      let init = if !self.match_token(TokenType::Equal) {
+         None
+      } else {
+         Some(self.expression(Precedence::None)?)
+      };
+      self.consume(TokenType::Semicolon)?;
+      Ok(VarDecl{ name, init, line })
+   }
+
+   fn param(&mut self) -> Result<String> {
+      self.consume(TokenType::Int)?;
+      Ok(self.identifier()?)
+   }
+
+   fn params(&mut self) -> Result<Vec<String>> {
+      let mut params = Vec::new();
+      if !self.match_token(TokenType::Void) {
+         params.push(self.param()?);
+         while self.match_token(TokenType::Comma) {
+            params.push(self.param()?);
+         }
+      }
+      Ok(params)
    }
 
    fn block(&mut self) -> Result<Block> {
@@ -232,15 +265,14 @@ impl Parser {
    fn declaration(&mut self) -> Result<Decl> {
       self.consume(TokenType::Int)?;
       let name = self.identifier()?;
-      let expr = if self.peek().as_ref().unwrap().token_type == TokenType::Equal {
-         self.advance();
-         Some(self.expression(Precedence::None)?)
-      } else {
-         None
-      };
-      let line = self.peek().as_ref().unwrap().line_number;
-      self.consume(TokenType::Semicolon)?;
-      Ok(Decl::Decl(name, expr, line))
+
+      let decl =
+         if self.peek().as_ref().unwrap().token_type == TokenType::OpenParen {
+            Ok(Decl::FuncDel(self.function_decl(name)?))
+         } else {
+            Ok(Decl::VarDecl(self.variable_decl(name)?))
+         };
+      return decl;
    }
 
    fn identifier(&mut self) -> Result<String> {
@@ -338,18 +370,17 @@ impl Parser {
    }
 
    fn for_init(&mut self) -> Result<Option<ForInit>> {
-      if self.peek().as_ref().unwrap().token_type == TokenType::Semicolon {
-         self.advance();
-         Ok(None)
-      } else {
-         match self.peek().as_ref().unwrap().token_type {
-            TokenType::Int => Ok(Some(ForInit::Decl(self.declaration()?))),
-            _ => {
-               let init = Some(ForInit::Expr(self.expression(Precedence::None)?));
-               self.consume(TokenType::Semicolon)?;
-               Ok(init)
-            }
+      if !self.match_token(TokenType::Semicolon) {
+         if self.match_token(TokenType::Int) {
+            let name = self.identifier()?;
+            Ok(Some(ForInit::Decl(self.variable_decl(name)?)))
+         } else {
+            let init = Some(ForInit::Expr(self.expression(Precedence::None)?));
+            self.consume(TokenType::Semicolon)?;
+            Ok(init)
          }
+      } else {
+         Ok(None)
       }
    }
 
@@ -409,6 +440,21 @@ impl Parser {
       Ok(Expr::UnaryOp(unary_op, Box::new(expr)))
    }
 
+   fn arg(&mut self) -> Result<Expr> {
+      self.expression(Precedence::None)
+   }
+
+   fn args(&mut self) -> Result<Vec<Expr>> {
+      let mut args = Vec::new();
+      while self.peek().as_ref().unwrap().token_type != TokenType::CloseParen {
+         args.push(self.arg()?);
+         while self.match_token(TokenType::Comma) {
+            args.push(self.arg()?);
+         }
+      }
+      Ok(args)
+   }
+
    fn factor(&mut self) -> Result<Expr> {
       if self.match_unary_op() {
          return self.unary()
@@ -427,7 +473,14 @@ impl Parser {
             },
             TokenType::Identifier => {
                let line_number = self.peek().as_ref().unwrap().line_number;
-               Ok(Expr::Var(self.identifier()?, line_number))
+               let name = self.identifier()?;
+               if self.match_token(TokenType::OpenParen) {
+                  let args = self.args()?;
+                  self.consume(TokenType::CloseParen)?;
+                  Ok(Expr::FunctionCall(name, args))
+               } else {
+                  Ok(Expr::Var(name, line_number))
+               }
             },
             _ => {
                let t = self.peek();

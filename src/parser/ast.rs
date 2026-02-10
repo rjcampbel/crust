@@ -2,13 +2,20 @@ pub struct AST {
    pub program: Program,
 }
 
-pub enum Program {
-   FunctionDefinition(FunctionDefinition),
+pub struct Program {
+   pub func_decls: Vec<FuncDecl>,
 }
 
-pub struct FunctionDefinition {
+pub struct FuncDecl {
    pub name: String,
-   pub body: Block,
+   pub params: Vec<String>,
+   pub body: Option<Block>,
+}
+
+pub struct VarDecl {
+   pub name: String,
+   pub init: Option<Expr>,
+   pub line: usize,
 }
 
 pub struct Block {
@@ -21,11 +28,12 @@ pub enum BlockItem {
 }
 
 pub enum Decl {
-   Decl(String, Option<Expr>, usize),
+   VarDecl(VarDecl),
+   FuncDel(FuncDecl)
 }
 
 pub enum ForInit {
-   Decl(Decl),
+   Decl(VarDecl),
    Expr(Expr),
 }
 
@@ -49,7 +57,8 @@ pub enum Expr {
    UnaryOp(UnaryOp, Box<Expr>),
    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
    Assignment(Box<Expr>, Box<Expr>, usize),
-   Conditional(Box<Expr>, Box<Expr>, Box<Expr>)
+   Conditional(Box<Expr>, Box<Expr>, Box<Expr>),
+   FunctionCall(String, Vec<Expr>),
 }
 
 #[derive(Clone)]

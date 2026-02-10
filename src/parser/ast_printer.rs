@@ -4,10 +4,10 @@ static INDENT_SIZE: usize = 2;
 
 pub fn print_ast(ast: &AST) {
    println!("AST:");
-   match &ast.program {
-      Program::FunctionDefinition(FunctionDefinition { name, body })  => {
-         println!("Function: {}", name);
-         print_block(body, INDENT_SIZE);
+   for func_decl in &ast.program.func_decls {
+      println!("Function: {}", &func_decl.name);
+      if let Some(block) = &func_decl.body {
+         print_block(block, INDENT_SIZE);
       }
    }
 }
@@ -22,14 +22,30 @@ fn print_block(block: &Block, indent: usize) {
 }
 
 fn print_decl(decl: &Decl, indent: usize) {
-   let indentation = " ".repeat(indent);
    match decl {
-      Decl::Decl(name, expr, _) => {
-         println!("{}Decl: {}", indentation, name);
-         if let Some(e) = expr {
-            print_expr(&e, indent + INDENT_SIZE);
-         }
+      Decl::FuncDel(f) => {
+         print_func_decl(f, indent + INDENT_SIZE);
       }
+      Decl::VarDecl(d) => {
+         print_var_decl(d, indent + INDENT_SIZE);
+      }
+   }
+}
+
+fn print_func_decl(decl: &FuncDecl, indent: usize) {
+   let indentation = " ".repeat(indent);
+   println!("{}FuncDecl: {}", indentation, decl.name);
+   println!("{}{}Params: {:?}", indentation, indentation, decl.params);
+   if let Some(body) = &decl.body {
+      print_block(body, indent + INDENT_SIZE*2);
+   }
+}
+
+fn print_var_decl(decl: &VarDecl, indent: usize) {
+   let indentation = " ".repeat(indent);
+   println!("{}VarDecl: {}", indentation, decl.name);
+   if let Some(e) = &decl.init {
+      print_expr(&e, indent + INDENT_SIZE);
    }
 }
 
@@ -80,7 +96,7 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          match init {
             Some(ForInit::Decl(decl)) => {
                println!("{}Init Decl: ", indentation);
-               print_decl(decl, indent + INDENT_SIZE);
+               print_var_decl(decl, indent + INDENT_SIZE);
             },
             Some(ForInit::Expr(expr)) => {
                println!("{}Init Expr: ", indentation);
@@ -196,6 +212,12 @@ fn print_expr(expr: &Expr, indent: usize) {
          print_expr(condition, indent + INDENT_SIZE);
          print_expr(true_expr, indent + INDENT_SIZE);
          print_expr(false_expr, indent + INDENT_SIZE);
+      },
+      Expr::FunctionCall(name, args) => {
+         println!("{}Function Call: {}", indentation, name);
+         for arg in args {
+            print_expr(arg, indent + INDENT_SIZE);
+         }
       }
    }
 }
