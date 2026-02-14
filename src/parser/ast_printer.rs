@@ -23,7 +23,7 @@ fn print_block(block: &Block, indent: usize) {
 
 fn print_decl(decl: &Decl, indent: usize) {
    match decl {
-      Decl::FuncDel(f) => {
+      Decl::FuncDecl(f) => {
          print_func_decl(f, indent + INDENT_SIZE);
       }
       Decl::VarDecl(d) => {

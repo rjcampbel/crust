@@ -10,12 +10,13 @@ pub struct FuncDecl {
    pub name: String,
    pub params: Vec<String>,
    pub body: Option<Block>,
+   pub line_number: usize,
 }
 
 pub struct VarDecl {
    pub name: String,
    pub init: Option<Expr>,
-   pub line: usize,
+   pub line_number: usize,
 }
 
 pub struct Block {
@@ -29,7 +30,7 @@ pub enum BlockItem {
 
 pub enum Decl {
    VarDecl(VarDecl),
-   FuncDel(FuncDecl)
+   FuncDecl(FuncDecl)
 }
 
 pub enum ForInit {

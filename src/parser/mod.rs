@@ -194,14 +194,14 @@ impl Parser {
    fn program(&mut self) -> Result<Program> {
       let mut func_decls: Vec<FuncDecl> = Vec::new();
       while !self.at_end() {
-         if let Decl::FuncDel(d) = self.declaration()? {
+         if let Decl::FuncDecl(d) = self.declaration()? {
             func_decls.push(d);
          }
       }
       Ok(Program{ func_decls })
    }
 
-   fn function_decl(&mut self, name: String) -> Result<FuncDecl> {
+   fn function_decl(&mut self, name: String, line_number: usize) -> Result<FuncDecl> {
       self.consume(TokenType::OpenParen)?;
       let params = self.params()?;
       self.consume(TokenType::CloseParen)?;
@@ -214,18 +214,17 @@ impl Parser {
          self.consume(TokenType::CloseBrace)?;
          Some(block)
       };
-      Ok(FuncDecl{ name, params, body: block })
+      Ok(FuncDecl{ name, params, body: block, line_number })
    }
 
-   fn variable_decl(&mut self, name: String) -> Result<VarDecl> {
-      let line = self.peek().as_ref().unwrap().line_number;
+   fn variable_decl(&mut self, name: String, line_number: usize) -> Result<VarDecl> {
       let init = if !self.match_token(TokenType::Equal) {
          None
       } else {
          Some(self.expression(Precedence::None)?)
       };
       self.consume(TokenType::Semicolon)?;
-      Ok(VarDecl{ name, init, line })
+      Ok(VarDecl{ name, init, line_number })
    }
 
    fn param(&mut self) -> Result<String> {
@@ -265,12 +264,13 @@ impl Parser {
    fn declaration(&mut self) -> Result<Decl> {
       self.consume(TokenType::Int)?;
       let name = self.identifier()?;
+      let line_number = self.peek().as_ref().unwrap().line_number;
 
       let decl =
          if self.peek().as_ref().unwrap().token_type == TokenType::OpenParen {
-            Ok(Decl::FuncDel(self.function_decl(name)?))
+            Ok(Decl::FuncDecl(self.function_decl(name, line_number)?))
          } else {
-            Ok(Decl::VarDecl(self.variable_decl(name)?))
+            Ok(Decl::VarDecl(self.variable_decl(name, line_number)?))
          };
       return decl;
    }
@@ -373,7 +373,8 @@ impl Parser {
       if !self.match_token(TokenType::Semicolon) {
          if self.match_token(TokenType::Int) {
             let name = self.identifier()?;
-            Ok(Some(ForInit::Decl(self.variable_decl(name)?)))
+            let line_number = self.peek().as_ref().unwrap().line_number;
+            Ok(Some(ForInit::Decl(self.variable_decl(name, line_number)?)))
          } else {
             let init = Some(ForInit::Expr(self.expression(Precedence::None)?));
             self.consume(TokenType::Semicolon)?;
