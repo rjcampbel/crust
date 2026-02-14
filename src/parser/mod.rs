@@ -325,12 +325,12 @@ impl Parser {
          TokenType::Break => {
             self.advance();
             self.consume(TokenType::Semicolon)?;
-            return Ok(Stmt::Break("".to_string()));
+            return Ok(Stmt::Break("".to_string(), self.previous().as_ref().unwrap().line_number));
          },
          TokenType::Continue => {
             self.advance();
             self.consume(TokenType::Semicolon)?;
-            return Ok(Stmt::Continue("".to_string()));
+            return Ok(Stmt::Continue("".to_string(), self.previous().as_ref().unwrap().line_number));
          },
          TokenType::While => {
             self.advance();
@@ -477,7 +477,7 @@ impl Parser {
                if self.match_token(TokenType::OpenParen) {
                   let args = self.args()?;
                   self.consume(TokenType::CloseParen)?;
-                  Ok(Expr::FunctionCall(name, args))
+                  Ok(Expr::FunctionCall(name, args, line_number))
                } else {
                   Ok(Expr::Var(name, line_number))
                }

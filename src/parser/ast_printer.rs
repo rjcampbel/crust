@@ -75,10 +75,10 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          println!("{}Compound:", indentation);
          print_block(block, indent + INDENT_SIZE);
       },
-      Stmt::Break(_) => {
+      Stmt::Break(_, _) => {
          println!("{}Break", indentation);
       },
-      Stmt::Continue(_) => {
+      Stmt::Continue(_, _) => {
          println!("{}Continue", indentation);
       },
       Stmt::While(expr, body, _) => {
@@ -213,7 +213,7 @@ fn print_expr(expr: &Expr, indent: usize) {
          print_expr(true_expr, indent + INDENT_SIZE);
          print_expr(false_expr, indent + INDENT_SIZE);
       },
-      Expr::FunctionCall(name, args) => {
+      Expr::FunctionCall(name, args, _) => {
          println!("{}Function Call: {}", indentation, name);
          for arg in args {
             print_expr(arg, indent + INDENT_SIZE);

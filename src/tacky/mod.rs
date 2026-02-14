@@ -95,10 +95,10 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
                 }
             }
         },
-        Stmt::Break(label) => {
+        Stmt::Break(label, _) => {
             instrs.push(Instr::Jump("break_".to_string() + &label));
         },
-        Stmt::Continue(label) => {
+        Stmt::Continue(label, _) => {
             instrs.push(Instr::Jump("continue_".to_string() + &label));
         },
         Stmt::DoWhile(body, condition, label) => {

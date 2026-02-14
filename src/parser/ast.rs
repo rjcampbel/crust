@@ -42,8 +42,8 @@ pub enum Stmt {
    Expression(Expr),
    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
    Compound(Block),
-   Break(String),
-   Continue(String),
+   Break(String, usize),
+   Continue(String, usize),
    While(Expr, Box<Stmt>, String),
    DoWhile(Box<Stmt>, Expr, String),
    For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, String),
@@ -58,7 +58,7 @@ pub enum Expr {
    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
    Assignment(Box<Expr>, Box<Expr>, usize),
    Conditional(Box<Expr>, Box<Expr>, Box<Expr>),
-   FunctionCall(String, Vec<Expr>),
+   FunctionCall(String, Vec<Expr>, usize),
 }
 
 #[derive(Clone)]
