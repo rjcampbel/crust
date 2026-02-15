@@ -20,7 +20,7 @@ pub fn codegen(tacky: TackyIR, print: bool) -> Result<Assembly> {
 fn generate_assembly(tacky: TackyIR) -> Result<Assembly> {
    let mut functions = Vec::new();
    for func in &tacky.program.funcs {
-      functions.push(generate_function(func.name.clone(), &func.instrs)?);
+      functions.push(generate_function(func.name.clone(), &func.params, &func.instrs)?);
    }
    let mut assembly = Assembly{ program: AssemblyProgram {functions} };
    replace_pseudoregisters(&mut assembly);
@@ -28,15 +28,29 @@ fn generate_assembly(tacky: TackyIR) -> Result<Assembly> {
    Ok(assembly)
 }
 
-fn generate_function(name: String, instrs: &Vec<Instr>) -> Result<Function> {
-   let instructions = generate_instructions(instrs)?;
+fn generate_function(name: String, params: &Vec<String>, ir_instrs: &Vec<Instr>) -> Result<Function> {
+   let mut instructions = Vec::new();
+   for (i, param) in params.iter().enumerate() {
+      let operand = Operand::Pseudo(param.clone());
+      match i {
+         0 => instructions.push(Instruction::Mov(Operand::Register(Register::DI), operand)),
+         1 => instructions.push(Instruction::Mov(Operand::Register(Register::SI), operand)),
+         2 => instructions.push(Instruction::Mov(Operand::Register(Register::DX), operand)),
+         3 => instructions.push(Instruction::Mov(Operand::Register(Register::CX), operand)),
+         4 => instructions.push(Instruction::Mov(Operand::Register(Register::R8), operand)),
+         5 => instructions.push(Instruction::Mov(Operand::Register(Register::R9), operand)),
+         pos @ _ => {
+            instructions.push(Instruction::Mov(Operand::Stack(16 * (pos as i64)), operand));
+         }
+      }
+   }
+   generate_function_instructions(ir_instrs, &mut instructions)?;
    let assembly_function = Function{ name, instructions, stack_allocator:StackAllocator::new() };
    Ok(assembly_function)
 }
 
-fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
-   let mut instructions = Vec::new();
-   for instr in instrs {
+fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec<Instruction>) -> Result<()> {
+   for instr in ir_instrs {
       match instr {
          Instr::Return(val) => {
             let ret = generate_operand(val.clone());
@@ -146,10 +160,56 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
          Instr::Label(label) => {
             instructions.push(Instruction::Label(label.clone()));
          },
-         _ => todo!()
+         Instr::FuncCall(name, args, dest) => {
+            let stack_padding =
+               if args.len() > 6 && (((args.len() - 6) % 2) == 1) {
+                  instructions.push(Instruction::AllocateStack(8));
+                  8
+               } else {
+                  0
+               };
+
+            for (i, arg) in args.iter().take(6).enumerate() {
+               let operand = generate_operand(arg.clone());
+               match i {
+                  0 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::DI))),
+                  1 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::SI))),
+                  2 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::DX))),
+                  3 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::CX))),
+                  4 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::R8))),
+                  5 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::R9))),
+                  pos @ _ => {
+                     instructions.push(Instruction::Mov(operand, Operand::Stack(16 * (pos as i64))));
+                  }
+               }
+            }
+
+            let stack_args = args.iter().skip(6).rev();
+            let stack_args_size = stack_args.len() as i64;
+            for arg in stack_args {
+               let operand = generate_operand(arg.clone());
+               match operand {
+                  Operand::Immediate(_) | Operand::Register(_) => instructions.push(Instruction::Push(operand)),
+                  _ => {
+                     instructions.push(Instruction::Mov(operand, Operand::Register(Register::AX)));
+                     instructions.push(Instruction::Push(Operand::Register(Register::AX)));
+                  }
+               }
+            }
+
+            instructions.push(Instruction::Call(name.clone()));
+
+            let dealloc_bytes = stack_args_size * 8 + stack_padding;
+            if dealloc_bytes > 0 {
+               instructions.push(Instruction::DeallocateStack(dealloc_bytes));
+            }
+
+            let dest = generate_operand(dest.clone());
+            instructions.push(Instruction::Mov(Operand::Register(Register::AX), dest));
+         }
       }
    }
-   Ok(instructions)
+   Ok(())
 }
 
 fn generate_operand(val: Val) -> Operand {
