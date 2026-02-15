@@ -15,7 +15,6 @@
 - [Usage](#usage)
 - [License](#license)
 - [Contact](#contact)
-- [Acknowledgements](#acknowledgements)
 
 ## About
 
@@ -89,7 +88,7 @@ git clone https://github.com/rjcampbel/crust.git
 cd crust
 ```
 
-### Setup (example: Node.js)
+### Setup
 
 ```bash
 cargo build
@@ -109,17 +108,18 @@ Arguments:
   <SOURCE>  Path to C source file to compile. Running without any additional arguments, or with only print_* arguments, will run all stages of the compiler and generate an executable in the same directory as the source file
 
 Options:
-  -l, --lex             Run only the lexer
-  -p, --parse           Run only the lexer and parser
-  -v, --validate        Run only the lexer, parser, and validator
-  -t, --tacky           Run only the lexer, parser, validator, and tacky generation
-  -c, --codegen         Run only the lexer, parser, validator, tacky generation, and assembly generation
-      --print-tokens    Print all the scanned tokens
-      --print-ast       Print the AST after parsing
-      --print-tacky     Print the tacky ast
-      --print-assembly  Print the assembly AST after code generation
-  -h, --help            Print help
-  -V, --version         Print version
+  -l, --lex               Run only the lexer
+  -p, --parse             Run lexer and parser
+  -v, --validate          Run lexer, parser, and validator
+  -t, --tacky             Run lexer, parser, validator, and IR generation
+  -c, --codegen           Run lexer, parser, validator, IR generation, and assembly generation
+      --print-tokens      Print all the scanned tokens
+      --print-ast         Print the AST after parsing and validating
+      --print-tacky       Print the IR
+      --print-assembly    Print the assembly
+      --args [<ARGS>...]  Additional arguments to pass to the assembler
+  -h, --help              Print help
+  -V, --version           Print version
 ```
 
 ## License
@@ -131,6 +131,4 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 Project lead / maintainer: Ryan Campbell — [GitHub profile](https://github.com/rjcampbel)
 
 Report issues at: [https://github.com/rjcampbel/crust/issues](https://github.com/rjcampbel/crust/issues)
-
-## Acknowledgements
 
