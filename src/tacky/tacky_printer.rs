@@ -1,8 +1,8 @@
 use crate::tacky::tacky::*;
 
-pub fn print_tacky_ast(tacky_ast: &TackyAST) {
-   println!("Tacky AST:");
-   for func in &tacky_ast.program.funcs {
+pub fn print_tacky(tacky: &TackyIR) {
+   println!("Tacky IR:");
+   for func in &tacky.program.funcs {
       println!("Tacky Function: {}", func.name);
       for instr in &func.instrs {
          match instr {

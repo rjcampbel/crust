@@ -1,4 +1,4 @@
-pub struct TackyAST {
+pub struct TackyIR {
    pub program: TackyProgram,
 }
 

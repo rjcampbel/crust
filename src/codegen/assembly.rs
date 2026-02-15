@@ -2,11 +2,11 @@ use super::stack_allocator::StackAllocator;
 
 use std::fmt;
 
-pub struct AssemblyAST {
+pub struct Assembly {
    pub program: AssemblyProgram,
 }
 
-impl fmt::Display for AssemblyAST {
+impl fmt::Display for Assembly {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       write!(f, "{}", self.program)
    }

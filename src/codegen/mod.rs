@@ -3,23 +3,23 @@ mod assembly_printer;
 mod stack_allocator;
 
 use crate::codegen::assembly::*;
-use crate::tacky::tacky::{BinaryOp, Instr, UnaryOp, TackyAST, Val};
+use crate::tacky::tacky::{BinaryOp, Instr, UnaryOp, TackyIR, Val};
 
 use anyhow::Result;
-use assembly_printer::print_assembly_ast;
+use assembly_printer::print_assembly;
 use stack_allocator::StackAllocator;
 
-pub fn codegen(tacky: TackyAST, print_assembly: bool) -> Result<AssemblyAST> {
-   let assembly_ast = generate_assembly(tacky)?;
-   if print_assembly {
-      print_assembly_ast(&assembly_ast);
+pub fn codegen(tacky: TackyIR, print: bool) -> Result<Assembly> {
+   let assembly = generate_assembly(tacky)?;
+   if print {
+      print_assembly(&assembly);
    }
-   Ok(assembly_ast)
+   Ok(assembly)
 }
 
-fn generate_assembly(tacky: TackyAST) -> Result<AssemblyAST> {
+fn generate_assembly(tacky: TackyIR) -> Result<Assembly> {
    let function = generate_function(tacky.program.funcs[0].name.clone(), &tacky.program.funcs[0].instrs)?;
-   let mut assembly = AssemblyAST{ program: function };
+   let mut assembly = Assembly{ program: function };
    replace_pseudoregisters(&mut assembly);
    fixup_instructions(&mut assembly);
    Ok(assembly)
@@ -156,7 +156,7 @@ fn generate_operand(val: Val) -> Operand {
    }
 }
 
-fn replace_pseudoregisters(assembly: &mut AssemblyAST) {
+fn replace_pseudoregisters(assembly: &mut Assembly) {
    match &mut assembly.program {
       AssemblyProgram::Function(_, instructions, stack_allocator) => {
          for instr in instructions {
@@ -197,7 +197,7 @@ fn replace_pseudoregisters(assembly: &mut AssemblyAST) {
    }
 }
 
-fn fixup_instructions(assembly: &mut AssemblyAST) {
+fn fixup_instructions(assembly: &mut Assembly) {
    match &mut assembly.program {
       AssemblyProgram::Function(_, instructions, stack_allocator) => {
          let stack_size = stack_allocator.get();

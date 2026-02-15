@@ -1,7 +1,7 @@
 use super::assembly::*;
 
-pub fn print_assembly_ast(assembly_ast: &AssemblyAST) {
-   match &assembly_ast.program {
+pub fn print_assembly(assembly: &Assembly) {
+   match &assembly.program {
       AssemblyProgram::Function(name, instructions, ..) => {
          println!("Assembly Function: {}", name);
          for instr in instructions {

@@ -9,22 +9,22 @@ use tacky::*;
 use anyhow::bail;
 use anyhow::Result;
 
-pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyAST> {
-    let tacky_ast = gen_tacky_program(ast)?;
+pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyIR> {
+    let tacky = gen_tacky_program(ast)?;
     if print_tacky {
-        tacky_printer::print_tacky_ast(&tacky_ast);
+        tacky_printer::print_tacky(&tacky);
     }
-    Ok(tacky_ast)
+    Ok(tacky)
 }
 
-fn gen_tacky_program(ast: AST) -> Result<TackyAST> {
+fn gen_tacky_program(ast: AST) -> Result<TackyIR> {
     let mut funcs = Vec::new();
     for func_decl in ast.program.func_decls {
         if let Some(body) = func_decl.body {
             funcs.push(gen_tacky_function(func_decl.name, func_decl.params, body)?);
         }
     }
-    Ok(TackyAST{ program: TackyProgram { funcs }})
+    Ok(TackyIR{ program: TackyProgram { funcs }})
 }
 
 fn gen_tacky_function(name: String, params: Vec<String>, body: ast::Block) -> Result<Function> {

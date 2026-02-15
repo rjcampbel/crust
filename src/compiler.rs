@@ -1,7 +1,7 @@
-use crate::{codegen, codegen::assembly::AssemblyAST};
+use crate::{codegen, codegen::assembly::Assembly};
 use crate::{lexer, lexer::token::Token};
 use crate::{parser, parser::ast::AST};
-use crate::{tacky, tacky::tacky::TackyAST};
+use crate::{tacky, tacky::tacky::TackyIR};
 use crate::emitter;
 use crate::gcc;
 use crate::validator;
@@ -66,12 +66,12 @@ impl Compiler {
       Ok(ast)
    }
 
-   pub fn tacky(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool) -> Result<TackyAST> {
+   pub fn tacky(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool) -> Result<TackyIR> {
       let ast = self.validate(print_tokens, print_ast)?;
       Ok(tacky::gen_tacky(ast, print_tacky)?)
    }
 
-   pub fn codegen(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<AssemblyAST> {
+   pub fn codegen(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool) -> Result<Assembly> {
       let tacky = self.tacky(print_tokens, print_ast, print_tacky)?;
       Ok(codegen::codegen(tacky, print_assembly)?)
    }

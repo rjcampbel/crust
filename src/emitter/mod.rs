@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-pub fn emit_code(assembly_ast: &AssemblyAST, output: &Path) -> Result<()> {
+pub fn emit_code(assembly_ast: &Assembly, output: &Path) -> Result<()> {
    let mut output = File::create(output)?;
    writeln!(output, "{}", assembly_ast)?;
    Ok(())
