@@ -2,6 +2,7 @@ use anyhow::{Result, bail};
 use crate::error;
 use crate::name_generator;
 use crate::parser::ast::*;
+
 use std::collections::HashMap;
 
 #[derive(Copy, Clone, PartialEq)]
@@ -22,19 +23,18 @@ type IdentifierMap = HashMap<String, IdentifierInfo>;
 pub fn resolve_program(program: &mut Program) -> Result<()> {
    let mut identifier_map: IdentifierMap = HashMap::new();
    for decl in &mut program.func_decls {
-      resolve_func_declaration(decl, &mut identifier_map)?;
+      resolve_func_declaration(decl, &mut identifier_map, false)?;
    }
    Ok(())
 }
 
-fn resolve_func_declaration(decl: &mut FuncDecl, identifier_map: &mut IdentifierMap) -> Result<()> {
+fn resolve_func_declaration(decl: &mut FuncDecl, identifier_map: &mut IdentifierMap, is_local: bool) -> Result<()> {
    if let Some(prev_decl) =  identifier_map.get(&decl.name) {
       if prev_decl.from_current_scope && prev_decl.linkage != Linkage::External {
          bail!(error::error(decl.line_number, format!("\"{}\" already declared.", decl.name), error::ErrorType::SemanticError))
       }
-   } else {
-      identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: decl.name.clone(), from_current_scope: true, linkage: Linkage::External });
    }
+   identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: decl.name.clone(), from_current_scope: true, linkage: Linkage::External });
 
    let mut inner_map = copy_identifier_map(identifier_map);
    for param in &mut decl.params {
@@ -42,6 +42,9 @@ fn resolve_func_declaration(decl: &mut FuncDecl, identifier_map: &mut Identifier
    }
 
    if let Some(body) = &mut decl.body {
+      if is_local {
+         bail!(error::error(decl.line_number, "Nested function definitions are not permitted".to_string(), error::ErrorType::SemanticError))
+      }
       resolve_block(body, &mut inner_map)?;
    }
    Ok(())
@@ -65,7 +68,7 @@ fn resolve_block_item(item: &mut BlockItem, identifier_map: &mut IdentifierMap) 
                resolve_var_declaration(decl, identifier_map)?;
             },
             Decl::FuncDecl(decl) => {
-               resolve_func_declaration(decl, identifier_map)?;
+               resolve_func_declaration(decl, identifier_map, true)?;
             }
          }
       }
