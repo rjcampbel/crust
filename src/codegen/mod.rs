@@ -18,16 +18,19 @@ pub fn codegen(tacky: TackyIR, print: bool) -> Result<Assembly> {
 }
 
 fn generate_assembly(tacky: TackyIR) -> Result<Assembly> {
-   let function = generate_function(tacky.program.funcs[0].name.clone(), &tacky.program.funcs[0].instrs)?;
-   let mut assembly = Assembly{ program: function };
+   let mut functions = Vec::new();
+   for func in &tacky.program.funcs {
+      functions.push(generate_function(func.name.clone(), &func.instrs)?);
+   }
+   let mut assembly = Assembly{ program: AssemblyProgram {functions} };
    replace_pseudoregisters(&mut assembly);
    fixup_instructions(&mut assembly);
    Ok(assembly)
 }
 
-fn generate_function(name: String, instrs: &Vec<Instr>) -> Result<AssemblyProgram> {
+fn generate_function(name: String, instrs: &Vec<Instr>) -> Result<Function> {
    let instructions = generate_instructions(instrs)?;
-   let assembly_function = AssemblyProgram::Function(name, instructions, StackAllocator::new());
+   let assembly_function = Function{ name, instructions, stack_allocator:StackAllocator::new() };
    Ok(assembly_function)
 }
 
@@ -157,96 +160,92 @@ fn generate_operand(val: Val) -> Operand {
 }
 
 fn replace_pseudoregisters(assembly: &mut Assembly) {
-   match &mut assembly.program {
-      AssemblyProgram::Function(_, instructions, stack_allocator) => {
-         for instr in instructions {
-            match instr {
-               Instruction::Mov(src, dst) => {
-                  convert_pseudo_stack(src, 4, stack_allocator);
-                  convert_pseudo_stack(dst, 4, stack_allocator);
-               },
-               Instruction::Unary(_, operand) => {
-                  convert_pseudo_stack(operand, 4, stack_allocator);
-               },
-               Instruction::Binary(_, left, right) => {
-                  convert_pseudo_stack(left, 4, stack_allocator);
-                  convert_pseudo_stack(right, 4, stack_allocator);
-               },
-               Instruction::Idiv(operand) => {
-                  convert_pseudo_stack(operand, 4, stack_allocator);
-               },
-               Instruction::Shl(dest, count) => {
-                  convert_pseudo_stack(dest, 4, stack_allocator);
-                  convert_pseudo_stack(count, 4, stack_allocator);
-               },
-               Instruction::Shr(dest, count) => {
-                  convert_pseudo_stack(dest, 4, stack_allocator);
-                  convert_pseudo_stack(count, 4, stack_allocator);
-               },
-               Instruction::Cmp(left, right) => {
-                  convert_pseudo_stack(left, 4, stack_allocator);
-                  convert_pseudo_stack(right, 4, stack_allocator);
-               },
-               Instruction::SetCC(_, operand) => {
-                  convert_pseudo_stack(operand, 4, stack_allocator);
-               },
-               _ => {}
-            }
+   for func in &mut assembly.program.functions {
+      for instr in &mut func.instructions {
+         match instr {
+            Instruction::Mov(src, dst) => {
+               convert_pseudo_stack(src, 4, &mut func.stack_allocator);
+               convert_pseudo_stack(dst, 4, &mut func.stack_allocator);
+            },
+            Instruction::Unary(_, operand) => {
+               convert_pseudo_stack(operand, 4, &mut func.stack_allocator);
+            },
+            Instruction::Binary(_, left, right) => {
+               convert_pseudo_stack(left, 4, &mut func.stack_allocator);
+               convert_pseudo_stack(right, 4, &mut func.stack_allocator);
+            },
+            Instruction::Idiv(operand) => {
+               convert_pseudo_stack(operand, 4, &mut func.stack_allocator);
+            },
+            Instruction::Shl(dest, count) => {
+               convert_pseudo_stack(dest, 4, &mut func.stack_allocator);
+               convert_pseudo_stack(count, 4, &mut func.stack_allocator);
+            },
+            Instruction::Shr(dest, count) => {
+               convert_pseudo_stack(dest, 4, &mut func.stack_allocator);
+               convert_pseudo_stack(count, 4, &mut func.stack_allocator);
+            },
+            Instruction::Cmp(left, right) => {
+               convert_pseudo_stack(left, 4, &mut func.stack_allocator);
+               convert_pseudo_stack(right, 4, &mut func.stack_allocator);
+            },
+            Instruction::SetCC(_, operand) => {
+               convert_pseudo_stack(operand, 4, &mut func.stack_allocator);
+            },
+            _ => {}
          }
       }
    }
 }
 
 fn fixup_instructions(assembly: &mut Assembly) {
-   match &mut assembly.program {
-      AssemblyProgram::Function(_, instructions, stack_allocator) => {
-         let stack_size = stack_allocator.get();
-         let mut new_instructions = Vec::new();
-         new_instructions.push(Instruction::AllocateStack(stack_size));
+   for func in &mut assembly.program.functions {
+      let stack_size = func.stack_allocator.get();
+      let mut new_instructions = Vec::new();
+      new_instructions.push(Instruction::AllocateStack(stack_size));
 
-         for instr in instructions.iter() {
-            match instr {
-               Instruction::Mov(Operand::Stack(src), Operand::Stack(dst)) => {
-                  new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
-                  new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*dst)));
-               },
-               Instruction::Idiv(Operand::Immediate(i)) => {
-                  new_instructions.push(Instruction::Mov(Operand::Immediate(*i), Operand::Register(Register::R10)));
-                  new_instructions.push(Instruction::Idiv(Operand::Register(Register::R10)));
-               }
-               Instruction::Binary(op @ (assembly::BinaryOp::Add | assembly::BinaryOp::Sub | assembly::BinaryOp::BitwiseAnd | assembly::BinaryOp::BitwiseOr | assembly::BinaryOp::BitwiseXor), Operand::Stack(src), Operand::Stack(dst)) => {
-                  new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
-                  new_instructions.push(Instruction::Binary(op.clone(), Operand::Register(Register::R10), Operand::Stack(*dst)));
-               },
-               Instruction::Binary(assembly::BinaryOp::Mult, src @ _, dst @ Operand::Stack(_)) => {
-                  new_instructions.push(Instruction::Mov(dst.clone(), Operand::Register(Register::R11)));
-                  new_instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, src.clone(), Operand::Register(Register::R11)));
-                  new_instructions.push(Instruction::Mov(Operand::Register(Register::R11), dst.clone()));
-               },
-               Instruction::Shl(count @ Operand::Stack(_), dest @ _) => {
-                  new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
-                  new_instructions.push(Instruction::Shl(Operand::Register(Register::CL), dest.clone()));
-               },
-               Instruction::Shr(count @ Operand::Stack(_), dest @ _) => {
-                  new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
-                  new_instructions.push(Instruction::Shr(Operand::Register(Register::CL), dest.clone()));
-               },
-               Instruction::Cmp(Operand::Stack(left), Operand::Stack(right)) => {
-                  new_instructions.push(Instruction::Mov(Operand::Stack(*left), Operand::Register(Register::R10)));
-                  new_instructions.push(Instruction::Cmp(Operand::Register(Register::R10), Operand::Stack(*right)));
-               },
-               Instruction::Cmp(left @ _, right @ Operand::Immediate(_)) => {
-                  new_instructions.push(Instruction::Mov(right.clone(), Operand::Register(Register::R10)));
-                  new_instructions.push(Instruction::Cmp(left.clone(), Operand::Register(Register::R10)));
-               },
-               i @ _ => {
-                  new_instructions.push(i.clone());
-               }
+      for instr in &func.instructions {
+         match instr {
+            Instruction::Mov(Operand::Stack(src), Operand::Stack(dst)) => {
+               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*dst)));
+            },
+            Instruction::Idiv(Operand::Immediate(i)) => {
+               new_instructions.push(Instruction::Mov(Operand::Immediate(*i), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Idiv(Operand::Register(Register::R10)));
+            }
+            Instruction::Binary(op @ (assembly::BinaryOp::Add | assembly::BinaryOp::Sub | assembly::BinaryOp::BitwiseAnd | assembly::BinaryOp::BitwiseOr | assembly::BinaryOp::BitwiseXor), Operand::Stack(src), Operand::Stack(dst)) => {
+               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Binary(op.clone(), Operand::Register(Register::R10), Operand::Stack(*dst)));
+            },
+            Instruction::Binary(assembly::BinaryOp::Mult, src @ _, dst @ Operand::Stack(_)) => {
+               new_instructions.push(Instruction::Mov(dst.clone(), Operand::Register(Register::R11)));
+               new_instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, src.clone(), Operand::Register(Register::R11)));
+               new_instructions.push(Instruction::Mov(Operand::Register(Register::R11), dst.clone()));
+            },
+            Instruction::Shl(count @ Operand::Stack(_), dest @ _) => {
+               new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
+               new_instructions.push(Instruction::Shl(Operand::Register(Register::CL), dest.clone()));
+            },
+            Instruction::Shr(count @ Operand::Stack(_), dest @ _) => {
+               new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
+               new_instructions.push(Instruction::Shr(Operand::Register(Register::CL), dest.clone()));
+            },
+            Instruction::Cmp(Operand::Stack(left), Operand::Stack(right)) => {
+               new_instructions.push(Instruction::Mov(Operand::Stack(*left), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Cmp(Operand::Register(Register::R10), Operand::Stack(*right)));
+            },
+            Instruction::Cmp(left @ _, right @ Operand::Immediate(_)) => {
+               new_instructions.push(Instruction::Mov(right.clone(), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Cmp(left.clone(), Operand::Register(Register::R10)));
+            },
+            i @ _ => {
+               new_instructions.push(i.clone());
             }
          }
-
-         *instructions = new_instructions;
       }
+
+      func.instructions = new_instructions;
    }
 }
 

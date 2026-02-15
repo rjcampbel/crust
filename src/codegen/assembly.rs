@@ -12,24 +12,35 @@ impl fmt::Display for Assembly {
    }
 }
 
-pub enum AssemblyProgram {
-   Function(String, Vec<Instruction>, StackAllocator),
+pub struct AssemblyProgram {
+   pub functions: Vec<Function>,
 }
 
 impl fmt::Display for AssemblyProgram {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      match self {
-         AssemblyProgram::Function(name, instructions, ..) => {
-            writeln!(f, "\t.globl _{}", name)?;
-            writeln!(f, "_{}:", name)?;
-            writeln!(f, "\tpushq\t%rbp")?;
-            writeln!(f, "\tmovq\t%rsp, %rbp")?;
-            for instr in instructions {
-               writeln!(f, "{}", instr)?;
-            }
-            Ok(())
-         }
+      for func in &self.functions {
+         writeln!(f, "{}", func)?;
       }
+      Ok(())
+   }
+}
+
+pub struct Function {
+   pub name: String,
+   pub instructions: Vec<Instruction>,
+   pub stack_allocator: StackAllocator,
+}
+
+impl fmt::Display for Function {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      writeln!(f, "\t.globl _{}", self.name)?;
+      writeln!(f, "_{}:", self.name)?;
+      writeln!(f, "\tpushq\t%rbp")?;
+      writeln!(f, "\tmovq\t%rsp, %rbp")?;
+      for instr in &self.instructions {
+         writeln!(f, "{}", instr)?;
+      }
+      Ok(())
    }
 }
 
@@ -49,6 +60,9 @@ pub enum Instruction {
    SetCC(ConditionCode, Operand),
    Label(String),
    AllocateStack(i64),
+   DeallocateStack(i64),
+   Push(Operand),
+   Call(String),
    Return
 }
 
@@ -69,6 +83,9 @@ impl fmt::Display for Instruction {
          Instruction::Label(label) => write!(f, "L{}:", label),
          Instruction::Idiv(operand) => write!(f, "\tidivl {}", operand),
          Instruction::AllocateStack(i) => write!(f, "\tsubq ${}, %rsp", i),
+         Instruction::DeallocateStack(i) => write!(f, "\taddq ${}, %rsp", i),
+         Instruction::Push(operand) => write!(f, "\tpushq {}", operand),
+         Instruction::Call(label) => write!(f, "\tcall _{}", label),
          Instruction::Return => {
             writeln!(f, "\tmovq\t%rbp, %rsp")?;
             writeln!(f, "\tpopq\t%rbp")?;
@@ -162,7 +179,12 @@ impl fmt::Display for ConditionCode {
 #[derive(Debug,Clone)]
 pub enum Register {
    AX,
+   CX,
    DX,
+   DI,
+   SI,
+   R8,
+   R9,
    R10,
    R11,
    CL,
@@ -172,7 +194,12 @@ impl fmt::Display for Register {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
          Register::AX => write!(f, "%eax"),
+         Register::CX => write!(f, "%ecx"),
          Register::DX => write!(f, "%edx"),
+         Register::DI => write!(f, "%edi"),
+         Register::SI => write!(f, "%esi"),
+         Register::R8 => write!(f, "%r8d"),
+         Register::R9 => write!(f, "%r9d"),
          Register::R10 => write!(f, "%r10d"),
          Register::R11 => write!(f, "%r11d"),
          Register::CL => write!(f, "%cl"),
