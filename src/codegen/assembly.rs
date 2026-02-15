@@ -194,73 +194,73 @@ impl fmt::Display for Register {
       match self {
          Register::AX(size) => {
             match size {
-               1 => write!(f, "%al"),
-               4 => write!(f, "%eax"),
                8 => write!(f, "%rax"),
+               4 => write!(f, "%eax"),
+               1 => write!(f, "%al"),
                _ => unreachable!()
             }
          },
          Register::DX(size) => {
             match size {
-               1 => write!(f, "%dl"),
-               4 => write!(f, "%edx"),
                8 => write!(f, "%rdx"),
+               4 => write!(f, "%edx"),
+               1 => write!(f, "%dl"),
                _ => unreachable!()
             }
          },
          Register::CX(size) => {
             match size {
-               1 => write!(f, "%cl"),
-               4 => write!(f, "%ecx"),
                8 => write!(f, "%rcx"),
+               4 => write!(f, "%ecx"),
+               1 => write!(f, "%cl"),
                _ => unreachable!()
             }
          },
          Register::DI(size) => {
             match size {
-               1 => write!(f, "%dil"),
-               4 => write!(f, "%edi"),
                8 => write!(f, "%rdi"),
+               4 => write!(f, "%edi"),
+               1 => write!(f, "%dil"),
                _ => unreachable!()
             }
          },
          Register::SI(size) => {
             match size {
-               1 => write!(f, "%sil"),
-               4 => write!(f, "%esi"),
                8 => write!(f, "%rsi"),
+               4 => write!(f, "%esi"),
+               1 => write!(f, "%sil"),
                _ => unreachable!()
             }
          },
          Register::R8(size) => {
             match size {
-               1 => write!(f, "%r8b"),
-               4 => write!(f, "%r8d"),
                8 => write!(f, "%r8"),
+               4 => write!(f, "%r8d"),
+               1 => write!(f, "%r8b"),
                _ => unreachable!()
             }
          },
          Register::R9(size) => {
             match size {
-               1 => write!(f, "%r9b"),
-               4 => write!(f, "%r9d"),
                8 => write!(f, "%r9"),
+               4 => write!(f, "%r9d"),
+               1 => write!(f, "%r9b"),
                _ => unreachable!()
             }
          },
          Register::R10(size) => {
             match size {
-               1 => write!(f, "%r10b"),
-               4 => write!(f, "%r10d"),
                8 => write!(f, "%r10"),
+               4 => write!(f, "%r10d"),
+               1 => write!(f, "%r10b"),
                _ => unreachable!()
             }
          },
          Register::R11(size) => {
             match size {
-               1 => write!(f, "%r11b"),
-               4 => write!(f, "%r11d"),
                8 => write!(f, "%r11"),
+               4 => write!(f, "%r11d"),
+               1 => write!(f, "%r11b"),
                _ => unreachable!()
             }
          }
