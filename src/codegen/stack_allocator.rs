@@ -15,7 +15,7 @@ impl StackAllocator {
 
    pub fn allocate(&mut self, name: String, bytes: i64) -> i64 {
       *self.map.entry(name).or_insert_with(|| {
-         self.offset = self.offset - bytes;
+         self.offset = self.offset + bytes;
          self.offset
       })
    }

@@ -318,6 +318,6 @@ fn fixup_instructions(assembly: &mut Assembly) {
 
 fn convert_pseudo_stack(pseudo: &mut Operand, size: i64, stack_allocator: &mut StackAllocator) {
    if let Operand::Pseudo(name) = pseudo {
-      *pseudo = Operand::Stack(stack_allocator.allocate(name.to_string(), size));
+      *pseudo = Operand::Stack(-stack_allocator.allocate(name.to_string(), size));
    };
 }
