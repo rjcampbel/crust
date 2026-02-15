@@ -26,24 +26,28 @@ struct Cli {
     /// generate an executable in the same directory as the source file.
     source: PathBuf,
 
+    /// Compile as library (generate .o file instead of executable)
+    #[arg(short)]
+    c: bool,
+
     /// Run only the lexer
-    #[arg(long, short)]
+    #[arg(long)]
     lex: bool,
 
     /// Run lexer and parser
-    #[arg(long, short)]
+    #[arg(long)]
     parse: bool,
 
     /// Run lexer, parser, and validator
-    #[arg(long, short)]
+    #[arg(long)]
     validate: bool,
 
     /// Run lexer, parser, validator, and IR generation
-    #[arg(long, short)]
+    #[arg(long)]
     tacky: bool,
 
     /// Run lexer, parser, validator, IR generation, and assembly generation
-    #[arg(long, short)]
+    #[arg(long)]
     codegen: bool,
 
     /// Print all the scanned tokens
@@ -96,7 +100,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    compiler.compile(args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly, &mut args.args)?;
+    compiler.compile(args.print_tokens, args.print_ast, args.print_tacky, args.print_assembly, args.c, &mut args.args)?;
 
     Ok(())
 }

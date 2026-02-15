@@ -37,9 +37,12 @@ impl Compiler {
       Ok(compiler)
    }
 
-   pub fn compile(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool, additional_args: &mut Vec<String>) -> Result<()> {
+   pub fn compile(&mut self, print_tokens: bool, print_ast: bool, print_tacky: bool, print_assembly: bool, library: bool, additional_args: &mut Vec<String>) -> Result<()> {
       let assembly_ast = self.codegen(print_tokens, print_ast, print_tacky, print_assembly)?;
       emitter::emit_code(&assembly_ast, &self.assembly_path)?;
+      if library {
+         additional_args.push("-c".to_string());
+      }
       gcc::assemble(&self.assembly_path, additional_args)?;
       Ok(())
    }
