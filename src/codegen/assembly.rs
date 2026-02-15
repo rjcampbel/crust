@@ -178,31 +178,92 @@ impl fmt::Display for ConditionCode {
 
 #[derive(Debug,Clone)]
 pub enum Register {
-   AX,
-   CX,
-   DX,
-   DI,
-   SI,
-   R8,
-   R9,
-   R10,
-   R11,
-   CL,
+   AX(usize),
+   DX(usize),
+   CX(usize),
+   DI(usize),
+   SI(usize),
+   R8(usize),
+   R9(usize),
+   R10(usize),
+   R11(usize),
 }
 
 impl fmt::Display for Register {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
-         Register::AX => write!(f, "%eax"),
-         Register::CX => write!(f, "%ecx"),
-         Register::DX => write!(f, "%edx"),
-         Register::DI => write!(f, "%edi"),
-         Register::SI => write!(f, "%esi"),
-         Register::R8 => write!(f, "%r8d"),
-         Register::R9 => write!(f, "%r9d"),
-         Register::R10 => write!(f, "%r10d"),
-         Register::R11 => write!(f, "%r11d"),
-         Register::CL => write!(f, "%cl"),
+         Register::AX(size) => {
+            match size {
+               1 => write!(f, "%al"),
+               4 => write!(f, "%eax"),
+               8 => write!(f, "%rax"),
+               _ => unreachable!()
+            }
+         },
+         Register::DX(size) => {
+            match size {
+               1 => write!(f, "%dl"),
+               4 => write!(f, "%edx"),
+               8 => write!(f, "%rdx"),
+               _ => unreachable!()
+            }
+         },
+         Register::CX(size) => {
+            match size {
+               1 => write!(f, "%cl"),
+               4 => write!(f, "%ecx"),
+               8 => write!(f, "%rcx"),
+               _ => unreachable!()
+            }
+         },
+         Register::DI(size) => {
+            match size {
+               1 => write!(f, "%dil"),
+               4 => write!(f, "%edi"),
+               8 => write!(f, "%rdi"),
+               _ => unreachable!()
+            }
+         },
+         Register::SI(size) => {
+            match size {
+               1 => write!(f, "%sil"),
+               4 => write!(f, "%esi"),
+               8 => write!(f, "%rsi"),
+               _ => unreachable!()
+            }
+         },
+         Register::R8(size) => {
+            match size {
+               1 => write!(f, "%r8b"),
+               4 => write!(f, "%r8d"),
+               8 => write!(f, "%r8"),
+               _ => unreachable!()
+            }
+         },
+         Register::R9(size) => {
+            match size {
+               1 => write!(f, "%r9b"),
+               4 => write!(f, "%r9d"),
+               8 => write!(f, "%r9"),
+               _ => unreachable!()
+            }
+         },
+         Register::R10(size) => {
+            match size {
+               1 => write!(f, "%r10b"),
+               4 => write!(f, "%r10d"),
+               8 => write!(f, "%r10"),
+               _ => unreachable!()
+            }
+         },
+         Register::R11(size) => {
+            match size {
+               1 => write!(f, "%r11b"),
+               4 => write!(f, "%r11d"),
+               8 => write!(f, "%r11"),
+               _ => unreachable!()
+            }
+         }
       }
    }
 }

@@ -33,14 +33,14 @@ fn generate_function(name: String, params: &Vec<String>, ir_instrs: &Vec<Instr>)
    for (i, param) in params.iter().enumerate() {
       let operand = Operand::Pseudo(param.clone());
       match i {
-         0 => instructions.push(Instruction::Mov(Operand::Register(Register::DI), operand)),
-         1 => instructions.push(Instruction::Mov(Operand::Register(Register::SI), operand)),
-         2 => instructions.push(Instruction::Mov(Operand::Register(Register::DX), operand)),
-         3 => instructions.push(Instruction::Mov(Operand::Register(Register::CX), operand)),
-         4 => instructions.push(Instruction::Mov(Operand::Register(Register::R8), operand)),
-         5 => instructions.push(Instruction::Mov(Operand::Register(Register::R9), operand)),
+         0 => instructions.push(Instruction::Mov(Operand::Register(Register::DI(4)), operand)),
+         1 => instructions.push(Instruction::Mov(Operand::Register(Register::SI(4)), operand)),
+         2 => instructions.push(Instruction::Mov(Operand::Register(Register::DX(4)), operand)),
+         3 => instructions.push(Instruction::Mov(Operand::Register(Register::CX(4)), operand)),
+         4 => instructions.push(Instruction::Mov(Operand::Register(Register::R8(4)), operand)),
+         5 => instructions.push(Instruction::Mov(Operand::Register(Register::R9(4)), operand)),
          pos @ _ => {
-            instructions.push(Instruction::Mov(Operand::Stack(16 * (pos as i64)), operand));
+            instructions.push(Instruction::Mov(Operand::Stack(16 + 8 * ((pos - 6 ) as i64)), operand));
          }
       }
    }
@@ -54,7 +54,7 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
       match instr {
          Instr::Return(val) => {
             let ret = generate_operand(val.clone());
-            instructions.push(Instruction::Mov(ret, Operand::Register(Register::AX)));
+            instructions.push(Instruction::Mov(ret, Operand::Register(Register::AX(4))));
             instructions.push(Instruction::Return);
          },
          Instr::Unary(UnaryOp::Not, src, dest) => {
@@ -109,16 +109,16 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
                   instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, right, dst));
                },
                BinaryOp::Divide => {
-                  instructions.push(Instruction::Mov(left, Operand::Register(Register::AX)));
+                  instructions.push(Instruction::Mov(left, Operand::Register(Register::AX(4))));
                   instructions.push(Instruction::Cdq);
                   instructions.push(Instruction::Idiv(right));
-                  instructions.push(Instruction::Mov(Operand::Register(Register::AX), dst));
+                  instructions.push(Instruction::Mov(Operand::Register(Register::AX(4)), dst));
                },
                BinaryOp::Modulus => {
-                  instructions.push(Instruction::Mov(left, Operand::Register(Register::AX)));
+                  instructions.push(Instruction::Mov(left, Operand::Register(Register::AX(4))));
                   instructions.push(Instruction::Cdq);
                   instructions.push(Instruction::Idiv(right));
-                  instructions.push(Instruction::Mov(Operand::Register(Register::DX), dst));
+                  instructions.push(Instruction::Mov(Operand::Register(Register::DX(4)), dst));
                },
                BinaryOp::BitwiseAnd => {
                   instructions.push(Instruction::Mov(left, dst.clone()));
@@ -161,8 +161,11 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
             instructions.push(Instruction::Label(label.clone()));
          },
          Instr::FuncCall(name, args, dest) => {
+            let stack_args = args.iter().skip(6).rev();
+            let stack_args_size = stack_args.len() as i64;
+
             let stack_padding =
-               if args.len() > 6 && (((args.len() - 6) % 2) == 1) {
+               if stack_args_size % 2 == 1 {
                   instructions.push(Instruction::AllocateStack(8));
                   8
                } else {
@@ -172,27 +175,23 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
             for (i, arg) in args.iter().take(6).enumerate() {
                let operand = generate_operand(arg.clone());
                match i {
-                  0 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::DI))),
-                  1 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::SI))),
-                  2 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::DX))),
-                  3 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::CX))),
-                  4 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::R8))),
-                  5 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::R9))),
-                  pos @ _ => {
-                     instructions.push(Instruction::Mov(operand, Operand::Stack(16 * (pos as i64))));
-                  }
+                  0 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::DI(4)))),
+                  1 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::SI(4)))),
+                  2 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::DX(4)))),
+                  3 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::CX(4)))),
+                  4 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::R8(4)))),
+                  5 => instructions.push(Instruction::Mov(operand, Operand::Register(Register::R9(4)))),
+                  _ => unreachable!()
                }
             }
 
-            let stack_args = args.iter().skip(6).rev();
-            let stack_args_size = stack_args.len() as i64;
             for arg in stack_args {
                let operand = generate_operand(arg.clone());
                match operand {
                   Operand::Immediate(_) | Operand::Register(_) => instructions.push(Instruction::Push(operand)),
                   _ => {
-                     instructions.push(Instruction::Mov(operand, Operand::Register(Register::AX)));
-                     instructions.push(Instruction::Push(Operand::Register(Register::AX)));
+                     instructions.push(Instruction::Mov(operand, Operand::Register(Register::AX(4))));
+                     instructions.push(Instruction::Push(Operand::Register(Register::AX(8))));
                   }
                }
             }
@@ -205,7 +204,7 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
             }
 
             let dest = generate_operand(dest.clone());
-            instructions.push(Instruction::Mov(Operand::Register(Register::AX), dest));
+            instructions.push(Instruction::Mov(Operand::Register(Register::AX(4)), dest));
          }
       }
    }
@@ -271,41 +270,41 @@ fn fixup_instructions(assembly: &mut Assembly) {
       for instr in &func.instructions {
          match instr {
             Instruction::Mov(Operand::Stack(src), Operand::Stack(dst)) => {
-               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
-               new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*dst)));
+               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10(4))));
+               new_instructions.push(Instruction::Mov(Operand::Register(Register::R10(4)), Operand::Stack(*dst)));
             },
             Instruction::Movb(Operand::Stack(src), Operand::Stack(dst)) => {
-               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
-               new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*dst)));
+               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10(4))));
+               new_instructions.push(Instruction::Mov(Operand::Register(Register::R10(4)), Operand::Stack(*dst)));
             },
             Instruction::Idiv(Operand::Immediate(i)) => {
-               new_instructions.push(Instruction::Mov(Operand::Immediate(*i), Operand::Register(Register::R10)));
-               new_instructions.push(Instruction::Idiv(Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Mov(Operand::Immediate(*i), Operand::Register(Register::R10(4))));
+               new_instructions.push(Instruction::Idiv(Operand::Register(Register::R10(4))));
             }
             Instruction::Binary(op @ (assembly::BinaryOp::Add | assembly::BinaryOp::Sub | assembly::BinaryOp::BitwiseAnd | assembly::BinaryOp::BitwiseOr | assembly::BinaryOp::BitwiseXor), Operand::Stack(src), Operand::Stack(dst)) => {
-               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
-               new_instructions.push(Instruction::Binary(op.clone(), Operand::Register(Register::R10), Operand::Stack(*dst)));
+               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10(4))));
+               new_instructions.push(Instruction::Binary(op.clone(), Operand::Register(Register::R10(4)), Operand::Stack(*dst)));
             },
             Instruction::Binary(assembly::BinaryOp::Mult, src @ _, dst @ Operand::Stack(_)) => {
-               new_instructions.push(Instruction::Mov(dst.clone(), Operand::Register(Register::R11)));
-               new_instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, src.clone(), Operand::Register(Register::R11)));
-               new_instructions.push(Instruction::Mov(Operand::Register(Register::R11), dst.clone()));
+               new_instructions.push(Instruction::Mov(dst.clone(), Operand::Register(Register::R11(4))));
+               new_instructions.push(Instruction::Binary(assembly::BinaryOp::Mult, src.clone(), Operand::Register(Register::R11(4))));
+               new_instructions.push(Instruction::Mov(Operand::Register(Register::R11(4)), dst.clone()));
             },
             Instruction::Shl(count @ Operand::Stack(_), dest @ _) => {
-               new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
-               new_instructions.push(Instruction::Shl(Operand::Register(Register::CL), dest.clone()));
+               new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CX(1))));
+               new_instructions.push(Instruction::Shl(Operand::Register(Register::CX(1)), dest.clone()));
             },
             Instruction::Shr(count @ Operand::Stack(_), dest @ _) => {
-               new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CL)));
-               new_instructions.push(Instruction::Shr(Operand::Register(Register::CL), dest.clone()));
+               new_instructions.push(Instruction::Movb(count.clone(), Operand::Register(Register::CX(1))));
+               new_instructions.push(Instruction::Shr(Operand::Register(Register::CX(1)), dest.clone()));
             },
             Instruction::Cmp(Operand::Stack(left), Operand::Stack(right)) => {
-               new_instructions.push(Instruction::Mov(Operand::Stack(*left), Operand::Register(Register::R10)));
-               new_instructions.push(Instruction::Cmp(Operand::Register(Register::R10), Operand::Stack(*right)));
+               new_instructions.push(Instruction::Mov(Operand::Stack(*left), Operand::Register(Register::R10(4))));
+               new_instructions.push(Instruction::Cmp(Operand::Register(Register::R10(4)), Operand::Stack(*right)));
             },
             Instruction::Cmp(left @ _, right @ Operand::Immediate(_)) => {
-               new_instructions.push(Instruction::Mov(right.clone(), Operand::Register(Register::R10)));
-               new_instructions.push(Instruction::Cmp(left.clone(), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Mov(right.clone(), Operand::Register(Register::R10(4))));
+               new_instructions.push(Instruction::Cmp(left.clone(), Operand::Register(Register::R10(4))));
             },
             i @ _ => {
                new_instructions.push(i.clone());
