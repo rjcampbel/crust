@@ -45,7 +45,7 @@ fn generate_function(name: String, params: &Vec<String>, ir_instrs: &Vec<Instr>)
       }
    }
    generate_function_instructions(ir_instrs, &mut instructions)?;
-   let assembly_function = Function{ name, instructions, stack_allocator:StackAllocator::new() };
+   let assembly_function = Function{ name, instructions, stack_allocator: StackAllocator::new() };
    Ok(assembly_function)
 }
 
@@ -252,6 +252,9 @@ fn replace_pseudoregisters(assembly: &mut Assembly) {
             Instruction::SetCC(_, operand) => {
                convert_pseudo_stack(operand, 4, &mut func.stack_allocator);
             },
+            Instruction::Push(operand) => {
+               convert_pseudo_stack(operand, 4, &mut func.stack_allocator);
+            },
             _ => {}
          }
       }
@@ -261,12 +264,17 @@ fn replace_pseudoregisters(assembly: &mut Assembly) {
 fn fixup_instructions(assembly: &mut Assembly) {
    for func in &mut assembly.program.functions {
       let stack_size = func.stack_allocator.get();
+      let stack_size = ((stack_size + 15) / 16) * 16;
       let mut new_instructions = Vec::new();
       new_instructions.push(Instruction::AllocateStack(stack_size));
 
       for instr in &func.instructions {
          match instr {
             Instruction::Mov(Operand::Stack(src), Operand::Stack(dst)) => {
+               new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
+               new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*dst)));
+            },
+            Instruction::Movb(Operand::Stack(src), Operand::Stack(dst)) => {
                new_instructions.push(Instruction::Mov(Operand::Stack(*src), Operand::Register(Register::R10)));
                new_instructions.push(Instruction::Mov(Operand::Register(Register::R10), Operand::Stack(*dst)));
             },
