@@ -32,7 +32,16 @@ pub fn print_tacky_ast(tacky_ast: &TackyAST) {
             },
             Instr::Label(label) => {
                println!("  LABEL {:?}", label);
-            }
+            },
+            Instr::FuncCall(func_name, args, dest) => {
+               let arg_strs: Vec<String> = args.iter().map(|arg| {
+                  match arg {
+                     Val::Integer(i) => i.to_string(),
+                     Val::Var(v) => v.clone(),
+                  }
+               }).collect();
+               println!("  CALL {}({}) -> {:?}", func_name, arg_strs.join(", "), dest);
+            },
          }
       }
    }

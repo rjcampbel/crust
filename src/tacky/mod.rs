@@ -11,11 +11,9 @@ use anyhow::Result;
 
 pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyAST> {
     let tacky_ast = gen_tacky_program(ast)?;
-
     if print_tacky {
         tacky_printer::print_tacky_ast(&tacky_ast);
     }
-
     Ok(tacky_ast)
 }
 
@@ -23,13 +21,13 @@ fn gen_tacky_program(ast: AST) -> Result<TackyAST> {
     let mut funcs = Vec::new();
     for func_decl in ast.program.func_decls {
         if let Some(body) = func_decl.body {
-            funcs.push(gen_tacky_function(func_decl.name, body)?);
+            funcs.push(gen_tacky_function(func_decl.name, func_decl.params, body)?);
         }
     }
     Ok(TackyAST{ program: TackyProgram { funcs }})
 }
 
-fn gen_tacky_function(name: String, body: ast::Block) -> Result<Function> {
+fn gen_tacky_function(name: String, params: Vec<String>, body: ast::Block) -> Result<Function> {
     let mut instrs = Vec::new();
     for item in body.items {
         match item {
@@ -47,7 +45,6 @@ fn gen_tacky_function(name: String, body: ast::Block) -> Result<Function> {
     // Push a dummy return instruction in case the function doesn't have a return statement
     instrs.push(Instr::Return(Val::Integer(0)));
 
-    let params = vec!["foo".to_string()];
     Ok(Function{name, params, instrs})
 }
 
@@ -236,8 +233,16 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
             instrs.push(Instr::Label(end_label));
             Ok(dest)
         },
-        _ => todo!()
-
+        Expr::FunctionCall(name, args, _) => {
+            let mut arg_vals = Vec::new();
+            for arg in args {
+                arg_vals.push(gen_expr_instrs(arg, instrs)?);
+            }
+            let dest = Val::Var(name_generator::gen_tmp_name());
+            let func_call = Instr::FuncCall(name, arg_vals, dest.clone());
+            instrs.push(func_call);
+            Ok(dest)
+        }
     }
 }
 

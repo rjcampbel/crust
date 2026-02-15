@@ -21,6 +21,7 @@ pub enum Instr {
    JumpIfZero(Val, String),
    JumpIfNotZero(Val, String),
    Label(String),
+   FuncCall(String, Vec<Val>, Val),
 }
 
 #[derive(Clone, Debug)]

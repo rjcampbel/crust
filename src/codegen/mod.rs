@@ -142,7 +142,8 @@ fn generate_instructions(instrs: &Vec<Instr>) -> Result<Vec<Instruction>> {
          },
          Instr::Label(label) => {
             instructions.push(Instruction::Label(label.clone()));
-         }
+         },
+         _ => todo!()
       }
    }
    Ok(instructions)
