@@ -1,4 +1,5 @@
 pub mod assembly;
+pub mod assembly_display;
 mod assembly_printer;
 mod stack_allocator;
 
