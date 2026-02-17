@@ -274,6 +274,8 @@ fn to_keyword(identifier: &str) -> Option<TokenType> {
       "for" => Some(TokenType::For),
       "break" => Some(TokenType::Break),
       "continue" => Some(TokenType::Continue),
+      "static" => Some(TokenType::Static),
+      "extern" => Some(TokenType::Extern),
       _ => None
    }
 }

@@ -56,6 +56,8 @@ pub enum TokenType {
    For,
    Break,
    Continue,
+   Static,
+   Extern,
 
    // Constands/Identifiers
    Integer(i64),
@@ -136,6 +138,8 @@ impl fmt::Display for TokenType {
          TokenType::Break => write!(f, "BREAK"),
          TokenType::Continue => write!(f, "CONTINUE"),
          TokenType::Comma => write!(f, ","),
+         TokenType::Static => write!(f, "STATIC"),
+         TokenType::Extern => write!(f, "EXTERN"),
          TokenType::EOF => write!(f, "EOF"),
       }
    }
