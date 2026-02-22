@@ -4,30 +4,10 @@ static INDENT_SIZE: usize = 2;
 
 pub fn print_ast(ast: &AST) {
    println!("AST:");
-   for func_decl in &ast.program.func_decls {
-      println!("Function: {}", &func_decl.name);
-      if let Some(block) = &func_decl.body {
-         print_block(block, INDENT_SIZE);
-      }
-   }
-}
-
-fn print_block(block: &Block, indent: usize) {
-   for item in &block.items {
-      match item {
-         BlockItem::Stmt(s) => print_stmt(&s, indent),
-         BlockItem::Decl(decl) => print_decl(decl, indent),
-      }
-   }
-}
-
-fn print_decl(decl: &Decl, indent: usize) {
-   match decl {
-      Decl::FuncDecl(f) => {
-         print_func_decl(f, indent + INDENT_SIZE);
-      }
-      Decl::VarDecl(d) => {
-         print_var_decl(d, indent + INDENT_SIZE);
+   for decl in &ast.program.decls {
+      match decl {
+         Decl::FuncDecl(func_decl) => print_func_decl(func_decl, INDENT_SIZE),
+         Decl::VarDecl(var_decl) => print_var_decl(&var_decl, INDENT_SIZE),
       }
    }
 }
@@ -46,6 +26,26 @@ fn print_var_decl(decl: &VarDecl, indent: usize) {
    println!("{}VarDecl: {}", indentation, decl.name);
    if let Some(e) = &decl.init {
       print_expr(&e, indent + INDENT_SIZE);
+   }
+}
+
+fn print_decl(decl: &Decl, indent: usize) {
+   match decl {
+      Decl::FuncDecl(f) => {
+         print_func_decl(f, indent + INDENT_SIZE);
+      }
+      Decl::VarDecl(d) => {
+         print_var_decl(d, indent + INDENT_SIZE);
+      }
+   }
+}
+
+fn print_block(block: &Block, indent: usize) {
+   for item in &block.items {
+      match item {
+         BlockItem::Stmt(s) => print_stmt(&s, indent),
+         BlockItem::Decl(decl) => print_decl(decl, indent),
+      }
    }
 }
 

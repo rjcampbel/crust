@@ -19,10 +19,16 @@ pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyIR> {
 
 fn gen_tacky_program(ast: AST) -> Result<TackyIR> {
     let mut funcs = Vec::new();
-    for func_decl in ast.program.func_decls {
-        if let Some(body) = func_decl.body {
-            funcs.push(gen_tacky_function(func_decl.name, func_decl.params, body)?);
+    for decl in ast.program.decls {
+        match decl {
+            Decl::FuncDecl(func_decl) => {
+                if let Some(body) = func_decl.body {
+                    funcs.push(gen_tacky_function(func_decl.name, func_decl.params, body)?);
+                }
+            },
+            Decl::VarDecl(_) => todo!()
         }
+
     }
     Ok(TackyIR{ program: TackyProgram { funcs }})
 }

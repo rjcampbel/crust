@@ -22,8 +22,12 @@ type IdentifierMap = HashMap<String, IdentifierInfo>;
 
 pub fn resolve_program(program: &mut Program) -> Result<()> {
    let mut identifier_map: IdentifierMap = HashMap::new();
-   for decl in &mut program.func_decls {
-      resolve_func_declaration(decl, &mut identifier_map, false)?;
+   for decl in &mut program.decls {
+      if let Decl::FuncDecl(decl) = decl {
+         resolve_func_declaration(decl, &mut identifier_map, false)?;
+      } else if let Decl::VarDecl(decl) = decl {
+         resolve_var_declaration(decl, &mut identifier_map)?;
+      }
    }
    Ok(())
 }

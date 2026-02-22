@@ -18,8 +18,15 @@ type TypeMap = HashMap<String, TypeInfo>;
 
 pub fn typecheck_program(program: &Program) -> Result<()> {
    let mut type_map = TypeMap::new();
-   for decl in &program.func_decls {
-      typecheck_func_declaration(&decl, &mut type_map)?;
+   for decl in &program.decls {
+      match decl {
+         Decl::VarDecl(decl) => {
+            typecheck_var_declaration(decl, &mut type_map)?;
+         },
+         Decl::FuncDecl(decl) => {
+            typecheck_func_declaration(decl, &mut type_map)?;
+         }
+      }
    }
    Ok(())
 }

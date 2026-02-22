@@ -3,20 +3,28 @@ pub struct AST {
 }
 
 pub struct Program {
-   pub func_decls: Vec<FuncDecl>,
+   pub decls: Vec<Decl>,
 }
 
 pub struct FuncDecl {
    pub name: String,
    pub params: Vec<String>,
    pub body: Option<Block>,
+   pub storage_class: Option<StorageClass>,
    pub line_number: usize,
 }
 
 pub struct VarDecl {
    pub name: String,
    pub init: Option<Expr>,
+   pub storage_class: Option<StorageClass>,
    pub line_number: usize,
+}
+
+#[derive(Copy, Clone)]
+pub enum StorageClass {
+   Static,
+   Extern,
 }
 
 pub struct Block {

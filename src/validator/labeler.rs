@@ -4,8 +4,10 @@ use crate::name_generator;
 use crate::parser::ast::*;
 
 pub fn label_program(program: &mut Program)  -> Result<()> {
-   for decl in &mut program.func_decls {
-      label_func_declaration(decl)?;
+   for decl in &mut program.decls {
+      if let Decl::FuncDecl(decl) = decl {
+         label_func_declaration(decl)?;
+      }
    }
    Ok(())
 }

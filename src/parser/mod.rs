@@ -192,16 +192,15 @@ impl Parser {
    }
 
    fn program(&mut self) -> Result<Program> {
-      let mut func_decls: Vec<FuncDecl> = Vec::new();
+      let mut decls: Vec<Decl> = Vec::new();
       while !self.at_end() {
-         if let Decl::FuncDecl(d) = self.declaration()? {
-            func_decls.push(d);
-         }
+         let decl = self.declaration()?;
+         decls.push(decl);
       }
-      Ok(Program{ func_decls })
+      Ok(Program{ decls })
    }
 
-   fn function_decl(&mut self, name: String, line_number: usize) -> Result<FuncDecl> {
+   fn function_decl(&mut self, name: String, storage_class: Option<StorageClass>, line_number: usize) -> Result<FuncDecl> {
       self.consume(TokenType::OpenParen)?;
       let params = self.params()?;
       self.consume(TokenType::CloseParen)?;
@@ -214,17 +213,17 @@ impl Parser {
          self.consume(TokenType::CloseBrace)?;
          Some(block)
       };
-      Ok(FuncDecl{ name, params, body: block, line_number })
+      Ok(FuncDecl{ name, params, body: block, storage_class, line_number })
    }
 
-   fn variable_decl(&mut self, name: String, line_number: usize) -> Result<VarDecl> {
+   fn variable_decl(&mut self, name: String, storage_class: Option<StorageClass>,line_number: usize) -> Result<VarDecl> {
       let init = if !self.match_token(TokenType::Equal) {
          None
       } else {
          Some(self.expression(Precedence::None)?)
       };
       self.consume(TokenType::Semicolon)?;
-      Ok(VarDecl{ name, init, line_number })
+      Ok(VarDecl{ name, init, storage_class, line_number })
    }
 
    fn param(&mut self) -> Result<String> {
@@ -254,23 +253,57 @@ impl Parser {
 
    fn block_item(&mut self) -> Result<BlockItem> {
       match self.peek().as_ref().unwrap().token_type {
-         TokenType::Int => {
+         TokenType::Int | TokenType::Static | TokenType::Extern => {
             Ok(BlockItem::Decl(self.declaration()?))
          },
          _ => Ok(BlockItem::Stmt(self.statement()?))
       }
    }
 
+   fn type_and_storage_class(&mut self) -> Result<Option<StorageClass>> {
+      let mut types = Vec::new();
+      let mut storage_classes = Vec::new();
+      while self.peek().as_ref().unwrap().token_type != TokenType::Identifier {
+         if self.match_token(TokenType::Int) {
+            types.push(TokenType::Int);
+         } else if self.match_token(TokenType::Static) {
+            storage_classes.push(StorageClass::Static);
+         } else if self.match_token(TokenType::Extern) {
+            storage_classes.push(StorageClass::Extern);
+         } else {
+            let t = self.peek();
+            bail!(error::error(t.as_ref().unwrap().line_number,
+                  format!("Expected a type or storage class, found '{}'", t.as_ref().unwrap().lexeme),
+                  error::ErrorType::SyntaxError))
+         }
+      }
+      if types.len() != 1 {
+         bail!(error::error(self.peek().as_ref().unwrap().line_number,
+               format!("Invalid type specifier"),
+               error::ErrorType::SyntaxError))
+      }
+      if storage_classes.len() > 1 {
+         bail!(error::error(self.peek().as_ref().unwrap().line_number,
+               format!("Invalid storage class"),
+               error::ErrorType::SyntaxError))
+      }
+      let storage_class = if storage_classes.len() == 1 {
+         Some(storage_classes[0])
+      } else {
+         None
+      };
+      Ok(storage_class)
+   }
+
    fn declaration(&mut self) -> Result<Decl> {
-      self.consume(TokenType::Int)?;
+      let storage_class = self.type_and_storage_class()?;
       let name = self.identifier()?;
       let line_number = self.peek().as_ref().unwrap().line_number;
-
       let decl =
          if self.peek().as_ref().unwrap().token_type == TokenType::OpenParen {
-            Ok(Decl::FuncDecl(self.function_decl(name, line_number)?))
+            Ok(Decl::FuncDecl(self.function_decl(name, storage_class, line_number)?))
          } else {
-            Ok(Decl::VarDecl(self.variable_decl(name, line_number)?))
+            Ok(Decl::VarDecl(self.variable_decl(name, storage_class, line_number)?))
          };
       return decl;
    }
@@ -371,10 +404,12 @@ impl Parser {
 
    fn for_init(&mut self) -> Result<Option<ForInit>> {
       if !self.match_token(TokenType::Semicolon) {
-         if self.match_token(TokenType::Int) {
+         let next_token_type = &self.peek().as_ref().unwrap().token_type;
+         if *next_token_type == TokenType::Int || *next_token_type == TokenType::Static || *next_token_type == TokenType::Extern {
+            let storage_class = self.type_and_storage_class()?;
             let name = self.identifier()?;
             let line_number = self.peek().as_ref().unwrap().line_number;
-            Ok(Some(ForInit::Decl(self.variable_decl(name, line_number)?)))
+            Ok(Some(ForInit::Decl(self.variable_decl(name, storage_class, line_number)?)))
          } else {
             let init = Some(ForInit::Expr(self.expression(Precedence::None)?));
             self.consume(TokenType::Semicolon)?;
