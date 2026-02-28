@@ -42,7 +42,7 @@ pub fn typecheck_program(program: &Program) -> Result<()> {
             typecheck_global_var_decl(decl, &mut type_map)?;
          },
          Decl::FuncDecl(decl) => {
-            typecheck_func_declaration(decl, &mut type_map, false)?;
+            typecheck_func_decl(decl, &mut type_map, false)?;
          }
       }
    }
@@ -102,7 +102,7 @@ fn typecheck_global_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<(
    Ok(())
 }
 
-fn typecheck_func_declaration(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: bool) -> Result<()> {
+fn typecheck_func_decl(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: bool) -> Result<()> {
    let decl_type = DeclType::Func(decl.params.len());
    let (has_body, body) =
       if let Some(body) = &decl.body {
@@ -176,7 +176,7 @@ fn typecheck_block_item(block_item: &BlockItem, type_map: &mut TypeMap) -> Resul
                typecheck_local_var_decl(decl, type_map)?;
             },
             Decl::FuncDecl(decl) => {
-               typecheck_func_declaration(decl, type_map, true)?;
+               typecheck_func_decl(decl, type_map, true)?;
             }
          }
       }

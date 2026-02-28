@@ -17,7 +17,7 @@ pub fn resolve_program(program: &mut Program) -> Result<()> {
    let mut identifier_map: IdentifierMap = HashMap::new();
    for decl in &mut program.decls {
       if let Decl::FuncDecl(decl) = decl {
-         resolve_func_declaration(decl, &mut identifier_map, false)?;
+         resolve_func_decl(decl, &mut identifier_map, false)?;
       } else if let Decl::VarDecl(decl) = decl {
          resolve_global_var(decl, &mut identifier_map)?;
       }
@@ -30,7 +30,7 @@ fn resolve_global_var(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) ->
    Ok(())
 }
 
-fn resolve_func_declaration(decl: &mut FuncDecl, identifier_map: &mut IdentifierMap, is_local: bool) -> Result<()> {
+fn resolve_func_decl(decl: &mut FuncDecl, identifier_map: &mut IdentifierMap, is_local: bool) -> Result<()> {
    if let Some(prev_decl) =  identifier_map.get(&decl.name) {
       if prev_decl.from_current_scope && !prev_decl.has_linkage {
          bail!(error::error(decl.line_number, format!("\"{}\" already declared.", decl.name), error::ErrorType::SemanticError))
@@ -77,10 +77,10 @@ fn resolve_block_item(item: &mut BlockItem, identifier_map: &mut IdentifierMap) 
       BlockItem::Decl(decl) => {
          match decl {
             Decl::VarDecl(decl) => {
-               resolve_var_declaration(decl, identifier_map)?;
+               resolve_var_decl(decl, identifier_map)?;
             },
             Decl::FuncDecl(decl) => {
-               resolve_func_declaration(decl, identifier_map, true)?;
+               resolve_func_decl(decl, identifier_map, true)?;
             }
          }
       }
@@ -135,7 +135,7 @@ fn resolve_for_init(init: &mut Option<ForInit>, identifier_map: &mut IdentifierM
          resolve_expr(e, identifier_map)?;
       },
       Some(ForInit::Decl(d)) => {
-         resolve_var_declaration(d, identifier_map)?;
+         resolve_var_decl(d, identifier_map)?;
       },
       None => ()
    }
@@ -170,7 +170,7 @@ fn resolve_local_var(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) -> 
    Ok(())
 }
 
-fn resolve_var_declaration(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) -> Result<()> {
+fn resolve_var_decl(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) -> Result<()> {
    resolve_local_var(decl, identifier_map)?;
 
    if let Some(expr) = &mut decl.init {

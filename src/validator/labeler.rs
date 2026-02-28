@@ -6,13 +6,13 @@ use crate::parser::ast::*;
 pub fn label_program(program: &mut Program)  -> Result<()> {
    for decl in &mut program.decls {
       if let Decl::FuncDecl(decl) = decl {
-         label_func_declaration(decl)?;
+         label_func_decl(decl)?;
       }
    }
    Ok(())
 }
 
-fn label_func_declaration(decl: &mut FuncDecl) -> Result<()> {
+fn label_func_decl(decl: &mut FuncDecl) -> Result<()> {
    if let Some(body) = &mut decl.body {
       label_block(body, &None)?;
    }
