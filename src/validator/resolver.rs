@@ -5,17 +5,10 @@ use crate::parser::ast::*;
 
 use std::collections::HashMap;
 
-#[derive(Copy, Clone, PartialEq)]
-enum Linkage {
-   None,
-   Internal,
-   External
-}
-
 struct IdentifierInfo {
    unique_name: String,
    from_current_scope: bool,
-   linkage: Linkage
+   has_linkage: bool,
 }
 
 type IdentifierMap = HashMap<String, IdentifierInfo>;
@@ -26,23 +19,28 @@ pub fn resolve_program(program: &mut Program) -> Result<()> {
       if let Decl::FuncDecl(decl) = decl {
          resolve_func_declaration(decl, &mut identifier_map, false)?;
       } else if let Decl::VarDecl(decl) = decl {
-         resolve_var_declaration(decl, &mut identifier_map)?;
+         resolve_global_var(decl, &mut identifier_map)?;
       }
    }
    Ok(())
 }
 
+fn resolve_global_var(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) -> Result<()> {
+   identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: decl.name.clone(), from_current_scope: true, has_linkage: true });
+   Ok(())
+}
+
 fn resolve_func_declaration(decl: &mut FuncDecl, identifier_map: &mut IdentifierMap, is_local: bool) -> Result<()> {
    if let Some(prev_decl) =  identifier_map.get(&decl.name) {
-      if prev_decl.from_current_scope && prev_decl.linkage != Linkage::External {
+      if prev_decl.from_current_scope && !prev_decl.has_linkage {
          bail!(error::error(decl.line_number, format!("\"{}\" already declared.", decl.name), error::ErrorType::SemanticError))
       }
    }
-   identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: decl.name.clone(), from_current_scope: true, linkage: Linkage::External });
+   identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: decl.name.clone(), from_current_scope: true, has_linkage: true });
 
    let mut inner_map = copy_identifier_map(identifier_map);
    for param in &mut decl.params {
-      resolve_local_var(param, decl.line_number, &mut inner_map)?;
+      resolve_param(param, decl.line_number, &mut inner_map)?;
    }
 
    if let Some(body) = &mut decl.body {
@@ -51,6 +49,16 @@ fn resolve_func_declaration(decl: &mut FuncDecl, identifier_map: &mut Identifier
       }
       resolve_block(body, &mut inner_map)?;
    }
+   Ok(())
+}
+
+fn resolve_param(name: &mut String, line_number: usize, identifier_map: &mut IdentifierMap) -> Result<()> {
+   if identifier_map.contains_key(name) && identifier_map.get(name).unwrap().from_current_scope == true {
+      bail!(error::error(line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
+   }
+   let unique_name = name_generator::uniquify_identifier(name);
+   identifier_map.insert(name.clone(), IdentifierInfo{ unique_name: unique_name.clone(), from_current_scope: true, has_linkage: false });
+   *name = unique_name;
    Ok(())
 }
 
@@ -141,18 +149,29 @@ fn resolve_optional_expr(expr: &mut Option<Expr>, identifier_map: &mut Identifie
    Ok(())
 }
 
-fn resolve_local_var(name: &mut String, line_number: usize, identifier_map: &mut IdentifierMap) -> Result<()> {
-   if identifier_map.contains_key(name) && identifier_map.get(name).unwrap().from_current_scope == true {
-      bail!(error::error(line_number, format!("\"{}\" already declared.", name), error::ErrorType::SemanticError))
+fn resolve_local_var(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) -> Result<()> {
+   let line_number = decl.line_number;
+   if let Some(prev_decl) = identifier_map.get(&decl.name) {
+      if prev_decl.from_current_scope {
+         if !(prev_decl.has_linkage && decl.storage_class == Some(StorageClass::Extern)) {
+            bail!(error::error(line_number, format!("Conflicting local declarations for \"{}\".", decl.name), error::ErrorType::SemanticError))
+         }
+      }
    }
-   let unique_name = name_generator::uniquify_identifier(name);
-   identifier_map.insert(name.clone(), IdentifierInfo{ unique_name: unique_name.clone(), from_current_scope: true, linkage: Linkage::None });
-   *name = unique_name;
+
+   if decl.storage_class == Some(StorageClass::Extern) {
+      identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: decl.name.clone(), from_current_scope: true, has_linkage: true });
+      return Ok(())
+   }
+
+   let unique_name = name_generator::uniquify_identifier(&decl.name.clone());
+   identifier_map.insert(decl.name.clone(), IdentifierInfo{ unique_name: unique_name.clone(), from_current_scope: true, has_linkage: false });
+   decl.name = unique_name;
    Ok(())
 }
 
 fn resolve_var_declaration(decl: &mut VarDecl, identifier_map: &mut IdentifierMap) -> Result<()> {
-   resolve_local_var(&mut decl.name, decl.line_number, identifier_map)?;
+   resolve_local_var(decl, identifier_map)?;
 
    if let Some(expr) = &mut decl.init {
       resolve_expr(expr, identifier_map)?;
@@ -210,7 +229,7 @@ fn copy_identifier_map(map: &HashMap<String, IdentifierInfo>) -> HashMap<String,
       new_map.insert(key.clone(), IdentifierInfo {
          unique_name: value.unique_name.clone(),
          from_current_scope: false,
-         linkage: value.linkage
+         has_linkage: value.has_linkage
       });
    }
    new_map

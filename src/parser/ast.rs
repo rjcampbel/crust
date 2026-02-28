@@ -21,7 +21,7 @@ pub struct VarDecl {
    pub line_number: usize,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum StorageClass {
    Static,
    Extern,

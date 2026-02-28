@@ -9,9 +9,27 @@ enum DeclType {
    Func(usize)
 }
 
+#[derive(Copy, Clone)]
+enum InitialValue {
+   Tentative,
+   Initialized(i64),
+   NoInitializer
+}
+
+enum Attrs {
+   FuncAttr {
+      defined: bool,
+      global: bool
+   },
+   StaticAttr {
+      initial_value: InitialValue,
+      global: bool
+   },
+   LocalAttr
+}
 struct TypeInfo {
    pub decl_type: DeclType,
-   pub defined: bool
+   pub attrs: Attrs
 }
 
 type TypeMap = HashMap<String, TypeInfo>;
@@ -21,41 +39,119 @@ pub fn typecheck_program(program: &Program) -> Result<()> {
    for decl in &program.decls {
       match decl {
          Decl::VarDecl(decl) => {
-            typecheck_var_declaration(decl, &mut type_map)?;
+            typecheck_global_var_decl(decl, &mut type_map)?;
          },
          Decl::FuncDecl(decl) => {
-            typecheck_func_declaration(decl, &mut type_map)?;
+            typecheck_func_declaration(decl, &mut type_map, false)?;
          }
       }
    }
    Ok(())
 }
 
-fn typecheck_func_declaration(decl: &FuncDecl, type_map: &mut TypeMap) -> Result<()> {
-   let decl_type = DeclType::Func(decl.params.len());
-   let mut already_defined = false;
+fn typecheck_global_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<()> {
+   let mut initial_value =
+      match decl.init {
+         Some(ref init) => {
+            if let Expr::Integer(i) = init {
+               InitialValue::Initialized(*i)
+            } else {
+               bail!(error::error(decl.line_number, format!("Global variable initializer must be a constant"), error::ErrorType::SemanticError))
+            }
+         },
+         None => {
+            if decl.storage_class == Some(StorageClass::Extern) {
+               InitialValue::NoInitializer
+            } else {
+               InitialValue::Tentative
+            }
+         }
+      };
 
-   let (has_body, body) = if let Some(body) = &decl.body {
-      (true, Some(body))
-   } else {
-      (false, None)
-   };
+   let mut global = decl.storage_class != Some(StorageClass::Static);
 
-   if let Some(existing_decl_type) = type_map.get(&decl.name) {
-      if existing_decl_type.decl_type != decl_type {
-         bail!(error::error(decl.line_number, "Incompatible function declarations".to_string(), error::ErrorType::SemanticError))
+   if let Some(existing_decl) = type_map.get(&decl.name) {
+      if existing_decl.decl_type != DeclType::Int {
+         bail!(error::error(decl.line_number, format!("\"{}\" redeclared as a variable", decl.name), error::ErrorType::SemanticError))
       }
-      already_defined = existing_decl_type.defined;
-      if already_defined && has_body {
-         bail!(error::error(decl.line_number, "Function is defined more than once".to_string(), error::ErrorType::SemanticError))
+
+      let (existing_initial_value, existing_global) = match existing_decl.attrs {
+         Attrs::StaticAttr { initial_value, global } => (initial_value, global),
+         _ => unreachable!()
+      };
+
+      if decl.storage_class == Some(StorageClass::Extern) {
+         global = existing_global;
+      } else if existing_global != global {
+         bail!(error::error(decl.line_number, format!("Conflicting storage class specifiers for \"{}\".", decl.name), error::ErrorType::SemanticError))
+      }
+
+      if matches!(existing_initial_value, InitialValue::Initialized(_)) {
+         if matches!(initial_value, InitialValue::Initialized(_))  {
+            bail!(error::error(decl.line_number, format!("Conflicting file scope variable definitions"), error::ErrorType::SemanticError))
+         } else {
+            initial_value = existing_initial_value;
+         }
+      } else if matches!(existing_initial_value, InitialValue::Tentative) && !matches!(initial_value, InitialValue::Initialized(_)){
+         initial_value = InitialValue::Tentative;
       }
    }
 
-   type_map.insert(decl.name.clone(), TypeInfo{ decl_type, defined: already_defined || has_body });
+   let attrs = Attrs::StaticAttr { initial_value, global };
+   type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
+   Ok(())
+}
+
+fn typecheck_func_declaration(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: bool) -> Result<()> {
+   let decl_type = DeclType::Func(decl.params.len());
+   let (has_body, body) =
+      if let Some(body) = &decl.body {
+         (true, Some(body))
+      } else {
+         (false, None)
+      };
+   let mut already_defined = false;
+   let mut global = decl.storage_class != Some(StorageClass::Static);
+
+   if !global && block_scope {
+      bail!(error::error(decl.line_number, format!("Static function declaration not allowed in block scope"), error::ErrorType::SemanticError))
+   }
+
+   if let Some(existing_decl) = type_map.get(&decl.name) {
+      match existing_decl.decl_type {
+         DeclType::Func(p) if p == decl.params.len() => {
+            match existing_decl.attrs {
+               Attrs::FuncAttr { defined, .. } => {
+                  already_defined = defined;
+               },
+               _ => unreachable!()
+            }
+            if already_defined && has_body {
+               bail!(error::error(decl.line_number, "Function is defined more than once".to_string(), error::ErrorType::SemanticError))
+            }
+         },
+         _ => {
+            bail!(error::error(decl.line_number, format!("Incompatible function declarations"), error::ErrorType::SemanticError))
+         }
+      }
+      match existing_decl.attrs {
+         Attrs::FuncAttr { global: old_global, .. } => {
+            if old_global && decl.storage_class == Some(StorageClass::Static) {
+               bail!(error::error(decl.line_number, format!("Conflicting storage class specifiers for function"), error::ErrorType::SemanticError))
+            }
+            global = old_global;
+         },
+         _ => unreachable!()
+      }
+   }
+
+   let defined = already_defined || has_body;
+   let attrs = Attrs::FuncAttr { defined, global };
+   type_map.insert(decl.name.clone(), TypeInfo{ decl_type, attrs });
 
    if let Some(body) = body {
       for param in &decl.params {
-         type_map.insert(param.clone(), TypeInfo{ decl_type: DeclType::Int, defined: false });
+         type_map.insert(param.clone(), TypeInfo{ decl_type: DeclType::Int, attrs: Attrs::LocalAttr });
       }
       typecheck_block(&body, type_map)?;
    }
@@ -77,10 +173,10 @@ fn typecheck_block_item(block_item: &BlockItem, type_map: &mut TypeMap) -> Resul
       BlockItem::Decl(decl) => {
          match decl {
             Decl::VarDecl(decl) => {
-               typecheck_var_declaration(decl, type_map)?;
+               typecheck_local_var_decl(decl, type_map)?;
             },
             Decl::FuncDecl(decl) => {
-               typecheck_func_declaration(decl, type_map)?;
+               typecheck_func_declaration(decl, type_map, true)?;
             }
          }
       }
@@ -133,7 +229,10 @@ fn typecheck_for_init(init: &Option<ForInit>, type_map: &mut TypeMap) -> Result<
          typecheck_expr(e, type_map)?;
       },
       Some(ForInit::Decl(d)) => {
-         typecheck_var_declaration(d, type_map)?;
+         if d.storage_class == Some(StorageClass::Static) {
+            bail!(error::error(d.line_number, format!("Static variable declaration not allowed in for loop initializer"), error::ErrorType::SemanticError))
+         }
+         typecheck_local_var_decl(d, type_map)?;
       },
       None => ()
    }
@@ -147,10 +246,40 @@ fn typecheck_optional_expr(expr: &Option<Expr>, type_map: &mut TypeMap) -> Resul
    Ok(())
 }
 
-fn typecheck_var_declaration(decl: &VarDecl, type_map: &mut TypeMap) -> Result<()> {
-   type_map.insert(decl.name.clone(), TypeInfo{ decl_type: DeclType::Int, defined: false });
-   if let Some(init) = &decl.init {
-      typecheck_expr(init, type_map)?;
+fn typecheck_local_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<()> {
+   if decl.storage_class == Some(StorageClass::Extern) {
+      if let Some(_) = &decl.init {
+         bail!(error::error(decl.line_number, format!("Initializer on local extern variable declaration"), error::ErrorType::SemanticError))
+      }
+      if let Some(existing_decl) = type_map.get(&decl.name) {
+         if !matches!(existing_decl.decl_type, DeclType::Int) {
+            bail!(error::error(decl.line_number, format!("Function redeclared as a variable"), error::ErrorType::SemanticError))
+         }
+      } else {
+         let attrs = Attrs::StaticAttr { initial_value: InitialValue::NoInitializer, global: true };
+         type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
+      }
+   } else if decl.storage_class == Some(StorageClass::Static) {
+      let initial_value =
+         match decl.init {
+            Some(ref init) => {
+               if let Expr::Integer(i) = init {
+                  InitialValue::Initialized(*i)
+               } else {
+                  bail!(error::error(decl.line_number, format!("Global variable initializer must be a constant"), error::ErrorType::SemanticError))
+               }
+            },
+            None => {
+               InitialValue::Initialized(0)
+            }
+         };
+      let attrs = Attrs::StaticAttr { initial_value, global: false };
+      type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
+   } else {
+      type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs: Attrs::LocalAttr });
+      if let Some(init) = &decl.init {
+         typecheck_expr(init, type_map)?;
+      }
    }
    Ok(())
 }
