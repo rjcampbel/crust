@@ -121,27 +121,22 @@ fn typecheck_func_decl(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: boo
       match existing_decl.decl_type {
          DeclType::Func(p) if p == decl.params.len() => {
             match existing_decl.attrs {
-               Attrs::FuncAttr { defined, .. } => {
+               Attrs::FuncAttr { defined, global: old_global } => {
                   already_defined = defined;
+                  if already_defined && has_body {
+                     bail!(error::error(decl.line_number, "Function is defined more than once".to_string(), error::ErrorType::SemanticError))
+                  }
+                  if old_global && decl.storage_class == Some(StorageClass::Static) {
+                     bail!(error::error(decl.line_number, format!("Conflicting storage class specifiers for function"), error::ErrorType::SemanticError))
+                  }
+                  global = old_global;
                },
                _ => unreachable!()
-            }
-            if already_defined && has_body {
-               bail!(error::error(decl.line_number, "Function is defined more than once".to_string(), error::ErrorType::SemanticError))
             }
          },
          _ => {
             bail!(error::error(decl.line_number, format!("Incompatible function declarations"), error::ErrorType::SemanticError))
          }
-      }
-      match existing_decl.attrs {
-         Attrs::FuncAttr { global: old_global, .. } => {
-            if old_global && decl.storage_class == Some(StorageClass::Static) {
-               bail!(error::error(decl.line_number, format!("Conflicting storage class specifiers for function"), error::ErrorType::SemanticError))
-            }
-            global = old_global;
-         },
-         _ => unreachable!()
       }
    }
 
