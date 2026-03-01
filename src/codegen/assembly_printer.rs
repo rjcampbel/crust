@@ -1,7 +1,17 @@
 use super::assembly::*;
 
 pub fn print_assembly(assembly: &Assembly) {
-   for func in &assembly.program.functions {
+   for top_level in &assembly.program.top_level {
+      match top_level {
+         TopLevel::Function(func) => print_assembly_func(func),
+         TopLevel::StaticVar(var) => {
+            println!("Static Variable: {}", var.name);
+            println!("  Value: {}", var.value);
+         }
+      }
+   }
+
+   fn print_assembly_func(func: &Function) {
       println!("Assembly Function: {}", func.name);
       for instr in &func.instructions {
          match instr {

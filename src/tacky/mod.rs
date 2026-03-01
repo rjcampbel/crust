@@ -20,20 +20,20 @@ pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyIR> {
 
 fn gen_tacky_program(ast: AST) -> Result<TackyIR> {
     let mut top_level = Vec::new();
-    let symbol_table = &ast.symbol_table;
+    let symbol_table = ast.symbol_table;
     for decl in ast.program.decls {
         match decl {
             Decl::FuncDecl(func_decl) => {
                 if let Some(body) = func_decl.body {
-                    let func = gen_tacky_function(func_decl.name, func_decl.params, body, symbol_table)?;
+                    let func = gen_tacky_function(func_decl.name, func_decl.params, body, &symbol_table)?;
                     top_level.push(TopLevel::Function(func));
                 }
             },
             _ => (),
         }
     }
-    convert_symbols_to_tacky(symbol_table, &mut top_level)?;
-    Ok(TackyIR{ program: TackyProgram { top_level }})
+    convert_symbols_to_tacky(&symbol_table, &mut top_level)?;
+    Ok(TackyIR { program: TackyProgram { top_level }, symbol_table: symbol_table})
 }
 
 fn convert_symbols_to_tacky(symbol_table: &SymbolTable, top_level: &mut Vec<TopLevel>) -> Result<()> {

@@ -1,5 +1,8 @@
+use crate::validator::symbol_table::*;
+
 pub struct TackyIR {
    pub program: TackyProgram,
+   pub symbol_table: SymbolTable
 }
 
 pub struct TackyProgram {

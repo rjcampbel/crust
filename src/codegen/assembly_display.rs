@@ -10,8 +10,11 @@ impl fmt::Display for Assembly {
 
 impl fmt::Display for AssemblyProgram {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      for func in &self.functions {
-         writeln!(f, "{}", func)?;
+      for top_level in &self.top_level {
+         match top_level {
+            TopLevel::Function(func) => writeln!(f, "{}", func)?,
+            TopLevel::StaticVar(_) => todo!(),
+         }
       }
       Ok(())
    }
@@ -88,6 +91,7 @@ impl fmt::Display for Operand {
          Operand::Register(r) => write!(f, "{}", r),
          Operand::Pseudo(name) => write!(f, "{}", name),
          Operand::Stack(i) => write!(f, "{}(%rbp)", i),
+         Operand::Data(_) => todo!(),
       }
    }
 }

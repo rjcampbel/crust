@@ -5,14 +5,25 @@ pub struct Assembly {
 }
 
 pub struct AssemblyProgram {
-   pub functions: Vec<Function>,
+   pub top_level: Vec<TopLevel>,
 }
 
+pub enum TopLevel {
+   Function(Function),
+   StaticVar(StaticVar),
+}
 
 pub struct Function {
    pub name: String,
+   pub global: bool,
    pub instructions: Vec<Instruction>,
    pub stack_allocator: StackAllocator,
+}
+
+pub struct StaticVar {
+   pub name: String,
+   pub global: bool,
+   pub value: i64,
 }
 
 #[derive(Clone)]
@@ -59,6 +70,7 @@ pub enum Operand {
    Register(Register),
    Pseudo(String),
    Stack(i64),
+   Data(String),
 }
 
 #[derive(Debug, Clone)]
