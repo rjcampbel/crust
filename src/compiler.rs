@@ -19,7 +19,7 @@ pub struct Compiler {
 
 impl Drop for Compiler {
    fn drop(&mut self) {
-      let _ = fs::remove_file(&self.assembly_path);
+      // let _ = fs::remove_file(&self.assembly_path);
       let _ = fs::remove_file(&self.pp_source_path);
    }
 }

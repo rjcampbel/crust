@@ -341,6 +341,9 @@ fn convert_pseudo(operand: &mut Operand, size: i64, symbol_table: &SymbolTable, 
             Attrs::StaticAttr { .. } => {
                *operand = Operand::Data(name.clone());
             },
+            Attrs::LocalAttr => {
+               *operand = Operand::Stack(-stack_allocator.allocate(name.to_string(), size));
+            },
             _ => ()
          }
       } else {

@@ -13,8 +13,28 @@ impl fmt::Display for AssemblyProgram {
       for top_level in &self.top_level {
          match top_level {
             TopLevel::Function(func) => writeln!(f, "{}", func)?,
-            TopLevel::StaticVar(_) => todo!(),
+            TopLevel::StaticVar(var) => writeln!(f, "{}", var)?,
          }
+      }
+      Ok(())
+   }
+}
+
+impl fmt::Display for StaticVar {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      if self.global {
+         writeln!(f, "\t.globl _{}", self.name)?;
+      }
+      if self.value != 0 {
+         writeln!(f, "\t.data")?;
+         writeln!(f, "\t.balign 4")?;
+         writeln!(f, "_{}:", self.name)?;
+         writeln!(f, ".long {}", self.value)?;
+      } else {
+         writeln!(f, "\t.bss")?;
+         writeln!(f, "\t.balign 4")?;
+         writeln!(f, "_{}:", self.name)?;
+         writeln!(f, "\t.zero 4")?;
       }
       Ok(())
    }
@@ -22,7 +42,10 @@ impl fmt::Display for AssemblyProgram {
 
 impl fmt::Display for Function {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      writeln!(f, "\t.globl _{}", self.name)?;
+      if self.global {
+         writeln!(f, "\t.globl _{}", self.name)?;
+      }
+      writeln!(f, "\t.text")?;
       writeln!(f, "_{}:", self.name)?;
       writeln!(f, "\tpushq\t%rbp")?;
       writeln!(f, "\tmovq\t%rsp, %rbp")?;
@@ -62,6 +85,7 @@ impl fmt::Display for Instruction {
       }
    }
 }
+
 impl fmt::Display for UnaryOp {
    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
       match self {
@@ -91,7 +115,7 @@ impl fmt::Display for Operand {
          Operand::Register(r) => write!(f, "{}", r),
          Operand::Pseudo(name) => write!(f, "{}", name),
          Operand::Stack(i) => write!(f, "{}(%rbp)", i),
-         Operand::Data(_) => todo!(),
+         Operand::Data(name) => write!(f, "_{}(%rip)", name)
       }
    }
 }
