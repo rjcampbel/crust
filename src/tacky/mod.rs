@@ -5,6 +5,7 @@ use crate::name_generator::{self, gen_label};
 use crate::parser::ast;
 use crate::parser::ast::{AST, BlockItem, Decl, Expr, Stmt, ForInit};
 use tacky::*;
+use crate::validator::symbol_table::*;
 
 use anyhow::bail;
 use anyhow::Result;
@@ -18,32 +19,55 @@ pub fn gen_tacky(ast: AST, print_tacky: bool) -> Result<TackyIR> {
 }
 
 fn gen_tacky_program(ast: AST) -> Result<TackyIR> {
-    let mut funcs = Vec::new();
+    let mut top_level = Vec::new();
+    let symbol_table = &ast.symbol_table;
     for decl in ast.program.decls {
         match decl {
             Decl::FuncDecl(func_decl) => {
                 if let Some(body) = func_decl.body {
-                    funcs.push(gen_tacky_function(func_decl.name, func_decl.params, body)?);
+                    let func = gen_tacky_function(func_decl.name, func_decl.params, body, symbol_table)?;
+                    top_level.push(TopLevel::Function(func));
                 }
             },
-            Decl::VarDecl(_) => todo!()
+            _ => (),
         }
-
     }
-    Ok(TackyIR{ program: TackyProgram { funcs }})
+    convert_symbols_to_tacky(symbol_table, &mut top_level)?;
+    Ok(TackyIR{ program: TackyProgram { top_level }})
 }
 
-fn gen_tacky_function(name: String, params: Vec<String>, body: ast::Block) -> Result<Function> {
+fn convert_symbols_to_tacky(symbol_table: &SymbolTable, top_level: &mut Vec<TopLevel>) -> Result<()> {
+    for (name, entry) in symbol_table {
+        if let Attrs::StaticAttr { initial_value, global } = entry.attrs {
+            match initial_value {
+                InitialValue::Initialized(value) => {
+                    top_level.push(TopLevel::StaticVar(StaticVar{ name: name.clone(), global, value}))
+                },
+                InitialValue::Tentative => {
+                    top_level.push(TopLevel::StaticVar(StaticVar{ name: name.clone(), global, value: 0}))
+                },
+                _ => ()
+            }
+        }
+    }
+    Ok(())
+}
+
+fn gen_tacky_function(name: String, params: Vec<String>, body: ast::Block, symbol_table: &SymbolTable) -> Result<Function> {
     let mut instrs = Vec::new();
+    let global = match &symbol_table.get(&name).unwrap().attrs {
+        Attrs::FuncAttr { global, .. } => *global,
+        _ => unreachable!()
+    };
     for item in body.items {
         match item {
             BlockItem::Decl(decl) => {
                 if let Decl::VarDecl(decl) = decl {
-                    generate_decl_instrs(decl, &mut instrs)?;
+                    generate_var_decl_instrs(decl, &mut instrs, symbol_table)?;
                 }
             },
             BlockItem::Stmt(stmt) => {
-                generate_stmt_instrs(stmt, &mut instrs)?;
+                generate_stmt_instrs(stmt, &mut instrs, symbol_table)?;
             }
         }
     }
@@ -51,18 +75,20 @@ fn gen_tacky_function(name: String, params: Vec<String>, body: ast::Block) -> Re
     // Push a dummy return instruction in case the function doesn't have a return statement
     instrs.push(Instr::Return(Val::Integer(0)));
 
-    Ok(Function{name, params, instrs})
+    Ok(Function{name, global, params, instrs})
 }
 
-fn generate_decl_instrs(decl: ast::VarDecl, instrs: &mut Vec<Instr>) -> Result<()> {
-    if let Some(init) = decl.init {
-        let val = gen_expr_instrs(init, instrs)?;
-        instrs.push(Instr::Copy(val, Val::Var(decl.name)));
+fn generate_var_decl_instrs(decl: ast::VarDecl, instrs: &mut Vec<Instr>, symbol_table: &SymbolTable) -> Result<()> {
+    if !matches!(symbol_table.get(&decl.name).unwrap().attrs, Attrs::StaticAttr{..}) {
+        if let Some(init) = decl.init {
+            let val = gen_expr_instrs(init, instrs)?;
+            instrs.push(Instr::Copy(val, Val::Var(decl.name)));
+        }
     }
     Ok(())
 }
 
-fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> {
+fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: &SymbolTable) -> Result<()> {
     match stmt {
         Stmt::Return(expr) => {
             gen_return_instrs(expr, instrs)?
@@ -76,11 +102,11 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
             let else_label = name_generator::gen_label("else");
             let condition: Val = gen_expr_instrs(condition, instrs)?;
             instrs.push(Instr::JumpIfZero(condition, else_label.clone()));
-            generate_stmt_instrs(*then_stmt, instrs)?;
+            generate_stmt_instrs(*then_stmt, instrs, symbol_table)?;
             instrs.push(Instr::Jump(end_label.clone()));
             instrs.push(Instr::Label(else_label));
             if let Some(s) = else_stmt {
-                generate_stmt_instrs(*s, instrs)?;
+                generate_stmt_instrs(*s, instrs, symbol_table)?;
             }
             instrs.push(Instr::Label(end_label))
         },
@@ -89,11 +115,11 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
                 match item {
                     BlockItem::Decl(decl) => {
                         if let Decl::VarDecl(d) = decl {
-                            generate_decl_instrs(d, instrs)?;
+                            generate_var_decl_instrs(d, instrs, symbol_table)?;
                         }
                     },
                     BlockItem::Stmt(stmt) => {
-                        generate_stmt_instrs(stmt, instrs)?;
+                        generate_stmt_instrs(stmt, instrs, symbol_table)?;
                     }
                 }
             }
@@ -107,7 +133,7 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
         Stmt::DoWhile(body, condition, label) => {
             let start_label = gen_label("start");
             instrs.push(Instr::Label(start_label.clone()));
-            generate_stmt_instrs(*body, instrs)?;
+            generate_stmt_instrs(*body, instrs, symbol_table)?;
             instrs.push(Instr::Label("continue_".to_string() + &label));
             let condition = gen_expr_instrs(condition, instrs)?;
             instrs.push(Instr::JumpIfNotZero(condition, start_label));
@@ -119,7 +145,7 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
             instrs.push(Instr::Label(continue_label.clone()));
             let condition = gen_expr_instrs(condition, instrs)?;
             instrs.push(Instr::JumpIfZero(condition, break_label.clone()));
-            generate_stmt_instrs(*body, instrs)?;
+            generate_stmt_instrs(*body, instrs, symbol_table)?;
             instrs.push(Instr::Jump(continue_label));
             instrs.push(Instr::Label(break_label));
         },
@@ -130,7 +156,7 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
             if let Some(init) = init {
                 match init {
                     ForInit::Decl(d) => {
-                        generate_decl_instrs(d, instrs)?;
+                        generate_var_decl_instrs(d, instrs, symbol_table)?;
                     },
                     ForInit::Expr(e) => {
                         gen_expr_instrs(e, instrs)?;
@@ -142,7 +168,7 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>) -> Result<()> 
                 let condition = gen_expr_instrs(condition, instrs)?;
                 instrs.push(Instr::JumpIfZero(condition, break_label.clone()));
             }
-            generate_stmt_instrs(*body, instrs)?;
+            generate_stmt_instrs(*body, instrs, symbol_table)?;
             instrs.push(Instr::Label(continue_label));
             if let Some(post) = post {
                 gen_expr_instrs(post, instrs)?;

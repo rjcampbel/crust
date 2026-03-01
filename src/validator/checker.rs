@@ -1,55 +1,26 @@
 use crate::{error, parser::ast::*};
-
+use super::symbol_table::*;
 use anyhow::{Result, bail};
-use std::collections::HashMap;
 
-#[derive(Copy, Clone, PartialEq)]
-enum DeclType {
-   Int,
-   Func(usize)
+pub fn typecheck_ast(ast: &mut AST) -> Result<()> {
+   typecheck_program(&ast.program, &mut ast.symbol_table)
 }
 
-#[derive(Copy, Clone)]
-enum InitialValue {
-   Tentative,
-   Initialized(i64),
-   NoInitializer
-}
-
-enum Attrs {
-   FuncAttr {
-      defined: bool,
-      global: bool
-   },
-   StaticAttr {
-      initial_value: InitialValue,
-      global: bool
-   },
-   LocalAttr
-}
-struct TypeInfo {
-   pub decl_type: DeclType,
-   pub attrs: Attrs
-}
-
-type TypeMap = HashMap<String, TypeInfo>;
-
-pub fn typecheck_program(program: &Program) -> Result<()> {
-   let mut type_map = TypeMap::new();
+fn typecheck_program(program: &Program, symbol_table: &mut SymbolTable) -> Result<()> {
    for decl in &program.decls {
       match decl {
          Decl::VarDecl(decl) => {
-            typecheck_global_var_decl(decl, &mut type_map)?;
+            typecheck_global_var_decl(decl, symbol_table)?;
          },
          Decl::FuncDecl(decl) => {
-            typecheck_func_decl(decl, &mut type_map, false)?;
+            typecheck_func_decl(decl, symbol_table, false)?;
          }
       }
    }
    Ok(())
 }
 
-fn typecheck_global_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_global_var_decl(decl: &VarDecl, symbol_table: &mut SymbolTable) -> Result<()> {
    let mut initial_value =
       match decl.init {
          Some(ref init) => {
@@ -70,7 +41,7 @@ fn typecheck_global_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<(
 
    let mut global = decl.storage_class != Some(StorageClass::Static);
 
-   if let Some(existing_decl) = type_map.get(&decl.name) {
+   if let Some(existing_decl) = symbol_table.get(&decl.name) {
       if existing_decl.decl_type != DeclType::Int {
          bail!(error::error(decl.line_number, format!("\"{}\" redeclared as a variable", decl.name), error::ErrorType::SemanticError))
       }
@@ -98,11 +69,11 @@ fn typecheck_global_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<(
    }
 
    let attrs = Attrs::StaticAttr { initial_value, global };
-   type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
+   symbol_table.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
    Ok(())
 }
 
-fn typecheck_func_decl(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: bool) -> Result<()> {
+fn typecheck_func_decl(decl: &FuncDecl, symbol_table: &mut SymbolTable, block_scope: bool) -> Result<()> {
    let decl_type = DeclType::Func(decl.params.len());
    let (has_body, body) =
       if let Some(body) = &decl.body {
@@ -117,7 +88,7 @@ fn typecheck_func_decl(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: boo
       bail!(error::error(decl.line_number, format!("Static function declaration not allowed in block scope"), error::ErrorType::SemanticError))
    }
 
-   if let Some(existing_decl) = type_map.get(&decl.name) {
+   if let Some(existing_decl) = symbol_table.get(&decl.name) {
       match existing_decl.decl_type {
          DeclType::Func(p) if p == decl.params.len() => {
             match existing_decl.attrs {
@@ -142,36 +113,36 @@ fn typecheck_func_decl(decl: &FuncDecl, type_map: &mut TypeMap, block_scope: boo
 
    let defined = already_defined || has_body;
    let attrs = Attrs::FuncAttr { defined, global };
-   type_map.insert(decl.name.clone(), TypeInfo{ decl_type, attrs });
+   symbol_table.insert(decl.name.clone(), TypeInfo{ decl_type, attrs });
 
    if let Some(body) = body {
       for param in &decl.params {
-         type_map.insert(param.clone(), TypeInfo{ decl_type: DeclType::Int, attrs: Attrs::LocalAttr });
+         symbol_table.insert(param.clone(), TypeInfo{ decl_type: DeclType::Int, attrs: Attrs::LocalAttr });
       }
-      typecheck_block(&body, type_map)?;
+      typecheck_block(&body, symbol_table)?;
    }
    Ok(())
 }
 
-fn typecheck_block(block: &Block, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_block(block: &Block, symbol_table: &mut SymbolTable) -> Result<()> {
    for block_item in &block.items {
-      typecheck_block_item(block_item, type_map)?;
+      typecheck_block_item(block_item, symbol_table)?;
    }
    Ok(())
 }
 
-fn typecheck_block_item(block_item: &BlockItem, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_block_item(block_item: &BlockItem, symbol_table: &mut SymbolTable) -> Result<()> {
    match block_item {
       BlockItem::Stmt(stmt) => {
-         typecheck_statement(stmt, type_map)?;
+         typecheck_statement(stmt, symbol_table)?;
       },
       BlockItem::Decl(decl) => {
          match decl {
             Decl::VarDecl(decl) => {
-               typecheck_local_var_decl(decl, type_map)?;
+               typecheck_local_var_decl(decl, symbol_table)?;
             },
             Decl::FuncDecl(decl) => {
-               typecheck_func_decl(decl, type_map, true)?;
+               typecheck_func_decl(decl, symbol_table, true)?;
             }
          }
       }
@@ -179,80 +150,80 @@ fn typecheck_block_item(block_item: &BlockItem, type_map: &mut TypeMap) -> Resul
    Ok(())
 }
 
-fn typecheck_statement(stmt: &Stmt, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_statement(stmt: &Stmt, symbol_table: &mut SymbolTable) -> Result<()> {
    match stmt {
       Stmt::Expression(e) => {
-         typecheck_expr(e, type_map)?;
+         typecheck_expr(e, symbol_table)?;
       },
       Stmt::Return(e) => {
-         typecheck_expr(e, type_map)?;
+         typecheck_expr(e, symbol_table)?;
       },
       Stmt::Null => (),
       Stmt::If(expr, then_stmt, else_stmt) => {
          if let Some(else_stmt) = else_stmt {
-            typecheck_statement(else_stmt, type_map)?;
+            typecheck_statement(else_stmt, symbol_table)?;
          }
-         typecheck_expr(expr, type_map)?;
-         typecheck_statement(then_stmt, type_map)?;
+         typecheck_expr(expr, symbol_table)?;
+         typecheck_statement(then_stmt, symbol_table)?;
       },
       Stmt::Compound(block) => {
-         typecheck_block(block, type_map)?;
+         typecheck_block(block, symbol_table)?;
       },
       Stmt::Break(_, _) => (),
       Stmt::Continue(_, _) => (),
       Stmt::While(condition, body, _) => {
-         typecheck_expr(condition, type_map)?;
-         typecheck_statement(body, type_map)?;
+         typecheck_expr(condition, symbol_table)?;
+         typecheck_statement(body, symbol_table)?;
       },
       Stmt::DoWhile(body, condition, _) => {
-         typecheck_statement(body, type_map)?;
-         typecheck_expr(condition, type_map)?;
+         typecheck_statement(body, symbol_table)?;
+         typecheck_expr(condition, symbol_table)?;
       },
       Stmt::For(init, condition, post, body, _) => {
-         typecheck_for_init(init, type_map)?;
-         typecheck_optional_expr(condition, type_map)?;
-         typecheck_optional_expr(post, type_map)?;
-         typecheck_statement(body, type_map)?;
+         typecheck_for_init(init, symbol_table)?;
+         typecheck_optional_expr(condition, symbol_table)?;
+         typecheck_optional_expr(post, symbol_table)?;
+         typecheck_statement(body, symbol_table)?;
       }
    }
    Ok(())
 }
 
-fn typecheck_for_init(init: &Option<ForInit>, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_for_init(init: &Option<ForInit>, symbol_table: &mut SymbolTable) -> Result<()> {
    match init {
       Some(ForInit::Expr(e)) => {
-         typecheck_expr(e, type_map)?;
+         typecheck_expr(e, symbol_table)?;
       },
       Some(ForInit::Decl(d)) => {
          if d.storage_class == Some(StorageClass::Static) {
             bail!(error::error(d.line_number, format!("Static variable declaration not allowed in for loop initializer"), error::ErrorType::SemanticError))
          }
-         typecheck_local_var_decl(d, type_map)?;
+         typecheck_local_var_decl(d, symbol_table)?;
       },
       None => ()
    }
    Ok(())
 }
 
-fn typecheck_optional_expr(expr: &Option<Expr>, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_optional_expr(expr: &Option<Expr>, symbol_table: &mut SymbolTable) -> Result<()> {
    if let Some(e) = expr {
-      typecheck_expr(e, type_map)?;
+      typecheck_expr(e, symbol_table)?;
    }
    Ok(())
 }
 
-fn typecheck_local_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_local_var_decl(decl: &VarDecl, symbol_table: &mut SymbolTable) -> Result<()> {
    if decl.storage_class == Some(StorageClass::Extern) {
       if let Some(_) = &decl.init {
          bail!(error::error(decl.line_number, format!("Initializer on local extern variable declaration"), error::ErrorType::SemanticError))
       }
-      if let Some(existing_decl) = type_map.get(&decl.name) {
+      if let Some(existing_decl) = symbol_table.get(&decl.name) {
          if !matches!(existing_decl.decl_type, DeclType::Int) {
             bail!(error::error(decl.line_number, format!("Function redeclared as a variable"), error::ErrorType::SemanticError))
          }
       } else {
          let attrs = Attrs::StaticAttr { initial_value: InitialValue::NoInitializer, global: true };
-         type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
+         symbol_table.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
       }
    } else if decl.storage_class == Some(StorageClass::Static) {
       let initial_value =
@@ -269,48 +240,48 @@ fn typecheck_local_var_decl(decl: &VarDecl, type_map: &mut TypeMap) -> Result<()
             }
          };
       let attrs = Attrs::StaticAttr { initial_value, global: false };
-      type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
+      symbol_table.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs });
    } else {
-      type_map.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs: Attrs::LocalAttr });
+      symbol_table.insert(decl.name.clone(), TypeInfo { decl_type: DeclType::Int, attrs: Attrs::LocalAttr });
       if let Some(init) = &decl.init {
-         typecheck_expr(init, type_map)?;
+         typecheck_expr(init, symbol_table)?;
       }
    }
    Ok(())
 }
 
-fn typecheck_expr(expr: &Expr, type_map: &mut TypeMap) -> Result<()> {
+fn typecheck_expr(expr: &Expr, symbol_table: &mut SymbolTable) -> Result<()> {
    match expr {
       Expr::Assignment(left, right, line_number) => {
          if let Expr::Var(_, _) = **left {
-            typecheck_expr(left, type_map)?;
-            typecheck_expr(right, type_map)?;
+            typecheck_expr(left, symbol_table)?;
+            typecheck_expr(right, symbol_table)?;
          } else {
             bail!(error::error(*line_number, format!("Invalid lvalue"), error::ErrorType::SemanticError))
          }
       },
       Expr::Var(name, line_number) => {
-         if let Some(t) = type_map.get(name) {
+         if let Some(t) = symbol_table.get(name) {
             if t.decl_type != DeclType::Int {
                bail!(error::error(*line_number, "Function name used as variable".to_string(), error::ErrorType::SemanticError))
             }
          }
       },
       Expr::BinaryOp(_, left, right) => {
-         typecheck_expr(left, type_map)?;
-         typecheck_expr(right, type_map)?;
+         typecheck_expr(left, symbol_table)?;
+         typecheck_expr(right, symbol_table)?;
       },
       Expr::Integer(_) => (),
       Expr::UnaryOp(_, expr) => {
-         typecheck_expr(expr, type_map)?;
+         typecheck_expr(expr, symbol_table)?;
       },
       Expr::Conditional(condition, middle, right) => {
-         typecheck_expr(condition, type_map)?;
-         typecheck_expr(middle, type_map)?;
-         typecheck_expr(right, type_map)?;
+         typecheck_expr(condition, symbol_table)?;
+         typecheck_expr(middle, symbol_table)?;
+         typecheck_expr(right, symbol_table)?;
       },
       Expr::FunctionCall(name, args , line_number) => {
-         if let Some(t) = type_map.get(name) {
+         if let Some(t) = symbol_table.get(name) {
             match t.decl_type {
                DeclType::Int => {
                   bail!(error::error(*line_number, "Variable used as function name".to_string(), error::ErrorType::SemanticError))
@@ -322,7 +293,7 @@ fn typecheck_expr(expr: &Expr, type_map: &mut TypeMap) -> Result<()> {
                }
             }
             for arg in args {
-               typecheck_expr(arg, type_map)?;
+               typecheck_expr(arg, symbol_table)?;
             }
          }
       }

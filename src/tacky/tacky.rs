@@ -3,11 +3,23 @@ pub struct TackyIR {
 }
 
 pub struct TackyProgram {
-   pub funcs: Vec<Function>,
+   pub top_level: Vec<TopLevel>,
+}
+
+pub enum TopLevel {
+   Function(Function),
+   StaticVar(StaticVar),
+}
+
+pub struct StaticVar {
+   pub name: String,
+   pub global: bool,
+   pub value: i64,
 }
 
 pub struct Function {
    pub name: String,
+   pub global: bool,
    pub params: Vec<String>,
    pub instrs: Vec<Instr>,
 }

@@ -3,6 +3,7 @@ pub mod ast_printer;
 
 use crate::error;
 use crate::lexer::token::{Token, TokenType};
+use crate::validator::symbol_table::SymbolTable;
 
 use anyhow::{bail, Result};
 use ast::*;
@@ -183,7 +184,7 @@ impl Parser {
 
    pub fn parse(&mut self, print_ast: bool) -> Result<AST> {
       let program = self.program()?;
-      let ast = AST { program };
+      let ast = AST { program , symbol_table: SymbolTable::new() };
       if print_ast {
          ast_printer::print_ast(&ast);
       }

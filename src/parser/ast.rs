@@ -1,5 +1,8 @@
+use crate::validator::symbol_table::SymbolTable;
+
 pub struct AST {
    pub program: Program,
+   pub symbol_table: SymbolTable,
 }
 
 pub struct Program {

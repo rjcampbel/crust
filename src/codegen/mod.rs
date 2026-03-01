@@ -4,7 +4,7 @@ mod assembly_printer;
 mod stack_allocator;
 
 use crate::codegen::assembly::*;
-use crate::tacky::tacky::{BinaryOp, Instr, UnaryOp, TackyIR, Val};
+use crate::tacky::tacky::{BinaryOp, Instr, TackyIR, TopLevel, UnaryOp, Val};
 
 use anyhow::Result;
 use assembly_printer::print_assembly;
@@ -20,8 +20,13 @@ pub fn codegen(tacky: TackyIR, print: bool) -> Result<Assembly> {
 
 fn generate_assembly(tacky: TackyIR) -> Result<Assembly> {
    let mut functions = Vec::new();
-   for func in &tacky.program.funcs {
-      functions.push(generate_function(func.name.clone(), &func.params, &func.instrs)?);
+   for top_level in &tacky.program.top_level {
+      match top_level {
+         TopLevel::Function(func) => {
+            functions.push(generate_function(func.name.clone(), &func.params, &func.instrs)?);
+         },
+         TopLevel::StaticVar(_) => todo!(),
+      }
    }
    let mut assembly = Assembly{ program: AssemblyProgram {functions} };
    replace_pseudoregisters(&mut assembly);
