@@ -78,6 +78,8 @@ pub enum UnaryOp {
    Complement,
    Negate,
    Not,
+   PreIncrement,
+   PreDecrement,
 }
 
 #[derive(Clone)]

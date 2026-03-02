@@ -50,6 +50,8 @@ pub enum UnaryOp {
    Negate,
    Complement,
    Not,
+   PreIncrement,
+   PreDecrement,
 }
 
 #[derive(Debug)]

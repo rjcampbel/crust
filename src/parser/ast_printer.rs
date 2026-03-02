@@ -138,7 +138,13 @@ fn print_expr(expr: &Expr, indent: usize) {
             },
             UnaryOp::Not => {
                println!("{}UnaryOp: Not", indentation);
-            }
+            },
+            UnaryOp::PreIncrement => {
+               println!("{}UnaryOp: PreIncrement", indentation);
+            },
+            UnaryOp::PreDecrement => {
+               println!("{}UnaryOp: PreDecrement", indentation);
+            },
          }
          print_expr(expr, indent + INDENT_SIZE);
       },

@@ -198,6 +198,8 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::UnaryOp::Negate => UnaryOp::Negate,
                 ast::UnaryOp::Complement => UnaryOp::Complement,
                 ast::UnaryOp::Not => UnaryOp::Not,
+                ast::UnaryOp::PreIncrement => UnaryOp::PreIncrement,
+                ast::UnaryOp::PreDecrement => UnaryOp::PreDecrement,
             };
             instrs.push(Instr::Unary(unary_op, src, dest.clone()));
             Ok(dest)

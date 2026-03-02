@@ -25,14 +25,13 @@ enum Precedence {
    Shift,
    Term,
    Factor,
-   Max,
 }
 
 impl Precedence {
    fn increment(&self) -> Precedence {
       match FromPrimitive::from_u8(*self as u8 + 1) {
          Some(p) => p,
-         _ => Precedence::Max,
+         _ => Precedence::None,
       }
    }
 }
@@ -122,13 +121,17 @@ impl TokenType {
    pub const UNARY_OPS: &[Self] = &[
       TokenType::Dash,
       TokenType::Tilde,
-      TokenType::Bang];
+      TokenType::Bang,
+      TokenType::DoublePlus,
+      TokenType::DoubleDash,];
 
    fn to_unary_op(&self) -> UnaryOp {
       match self {
          TokenType::Dash => UnaryOp::Negate,
          TokenType::Tilde => UnaryOp::Complement,
          TokenType::Bang => UnaryOp::Not,
+         TokenType::DoublePlus => UnaryOp::PreIncrement,
+         TokenType::DoubleDash => UnaryOp::PreDecrement,
          _ => unreachable!()
       }
    }

@@ -70,6 +70,16 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
             instructions.push(Instruction::Mov(Operand::Immediate(0), generate_operand(dest.clone())));
             instructions.push(Instruction::SetCC(ConditionCode::E, generate_operand(dest.clone())));
          },
+         Instr::Unary(UnaryOp::PreIncrement, src, dest) => {
+            let dest = generate_operand(dest.clone());
+            instructions.push(Instruction::Mov(generate_operand(src.clone()), dest.clone()));
+            instructions.push(Instruction::Binary(assembly::BinaryOp::Add, Operand::Immediate(1), dest));
+         },
+         Instr::Unary(UnaryOp::PreDecrement, src, dest) => {
+            let dest = generate_operand(dest.clone());
+            instructions.push(Instruction::Mov(generate_operand(src.clone()), dest.clone()));
+            instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, Operand::Immediate(1), dest));
+         },
          Instr::Unary(operator, src, dest) => {
             let src = generate_operand(src.clone());
             let dst = generate_operand(dest.clone());
