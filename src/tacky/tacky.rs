@@ -45,13 +45,15 @@ pub enum Val {
    Var(String),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum UnaryOp {
    Negate,
    Complement,
    Not,
    PreIncrement,
    PreDecrement,
+   PostIncrement,
+   PostDecrement,
 }
 
 #[derive(Debug)]

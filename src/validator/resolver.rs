@@ -201,7 +201,7 @@ fn resolve_expr(expr: &mut Expr, identifier_map: &mut IdentifierMap) -> Result<(
          resolve_expr(right, identifier_map)?;
       },
       Expr::Integer(_) => (),
-      Expr::UnaryOp(_, expr) => {
+      Expr::UnaryOp(_, expr, _) => {
          resolve_expr(expr, identifier_map)?;
       },
       Expr::Conditional(condition, middle, right) => {

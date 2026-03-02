@@ -72,13 +72,29 @@ fn generate_function_instructions(ir_instrs: &Vec<Instr>, instructions: &mut Vec
          },
          Instr::Unary(UnaryOp::PreIncrement, src, dest) => {
             let dest = generate_operand(dest.clone());
-            instructions.push(Instruction::Mov(generate_operand(src.clone()), dest.clone()));
-            instructions.push(Instruction::Binary(assembly::BinaryOp::Add, Operand::Immediate(1), dest));
+            let src = generate_operand(src.clone());
+            instructions.push(Instruction::Mov(src.clone(), dest.clone()));
+            instructions.push(Instruction::Binary(assembly::BinaryOp::Add, Operand::Immediate(1), dest.clone()));
+            instructions.push(Instruction::Mov(dest, src));
          },
          Instr::Unary(UnaryOp::PreDecrement, src, dest) => {
             let dest = generate_operand(dest.clone());
-            instructions.push(Instruction::Mov(generate_operand(src.clone()), dest.clone()));
-            instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, Operand::Immediate(1), dest));
+            let src = generate_operand(src.clone());
+            instructions.push(Instruction::Mov(src.clone(), dest.clone()));
+            instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, Operand::Immediate(1), dest.clone()));
+            instructions.push(Instruction::Mov(dest, src));
+         },
+         Instr::Unary(UnaryOp::PostIncrement, src, dest) => {
+            let dest = generate_operand(dest.clone());
+            let src = generate_operand(src.clone());
+            instructions.push(Instruction::Mov(src.clone(), dest.clone()));
+            instructions.push(Instruction::Binary(assembly::BinaryOp::Add, Operand::Immediate(1), src.clone()));
+         },
+         Instr::Unary(UnaryOp::PostDecrement, src, dest) => {
+            let dest = generate_operand(dest.clone());
+            let src = generate_operand(src.clone());
+            instructions.push(Instruction::Mov(src.clone(), dest.clone()));
+            instructions.push(Instruction::Binary(assembly::BinaryOp::Sub, Operand::Immediate(1), src.clone()));
          },
          Instr::Unary(operator, src, dest) => {
             let src = generate_operand(src.clone());

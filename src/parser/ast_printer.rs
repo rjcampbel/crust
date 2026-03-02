@@ -128,7 +128,7 @@ fn print_expr(expr: &Expr, indent: usize) {
       Expr::Var(identifier, _) => {
          println!("{}Identifier: {}", indentation, identifier);
       }
-      Expr::UnaryOp(operator, expr) => {
+      Expr::UnaryOp(operator, expr, _) => {
          match operator {
             UnaryOp::Complement => {
                println!("{}UnaryOp: Complement", indentation);
@@ -144,6 +144,12 @@ fn print_expr(expr: &Expr, indent: usize) {
             },
             UnaryOp::PreDecrement => {
                println!("{}UnaryOp: PreDecrement", indentation);
+            },
+            UnaryOp::PostIncrement => {
+               println!("{}UnaryOp: PostIncrement", indentation);
+            },
+            UnaryOp::PostDecrement => {
+               println!("{}UnaryOp: PostDecrement", indentation);
             },
          }
          print_expr(expr, indent + INDENT_SIZE);

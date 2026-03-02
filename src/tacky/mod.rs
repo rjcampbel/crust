@@ -191,7 +191,7 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
         Expr::Integer(i) => {
             Ok(Val::Integer(i))
         },
-        Expr::UnaryOp(operator, expr) => {
+        Expr::UnaryOp(operator, expr, _) => {
             let src = gen_expr_instrs(*expr, instrs)?;
             let dest = Val::Var(name_generator::gen_tmp_name());
             let unary_op = match operator {
@@ -200,6 +200,8 @@ fn gen_expr_instrs(expr: Expr, instrs: &mut Vec<Instr>) -> Result<Val> {
                 ast::UnaryOp::Not => UnaryOp::Not,
                 ast::UnaryOp::PreIncrement => UnaryOp::PreIncrement,
                 ast::UnaryOp::PreDecrement => UnaryOp::PreDecrement,
+                ast::UnaryOp::PostIncrement => UnaryOp::PostIncrement,
+                ast::UnaryOp::PostDecrement => UnaryOp::PostDecrement,
             };
             instrs.push(Instr::Unary(unary_op, src, dest.clone()));
             Ok(dest)

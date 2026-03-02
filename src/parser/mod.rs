@@ -25,6 +25,8 @@ enum Precedence {
    Shift,
    Term,
    Factor,
+   Level2,
+   Level1
 }
 
 impl Precedence {
@@ -39,6 +41,8 @@ impl Precedence {
 impl TokenType {
    fn precedence(&self) -> Precedence {
       match self {
+         TokenType::DoublePlus => Precedence::Level1,
+         TokenType::DoubleDash => Precedence::Level1,
          TokenType::Star => Precedence::Factor,
          TokenType::Slash => Precedence::Factor,
          TokenType::Percent => Precedence::Factor,
@@ -460,6 +464,15 @@ impl Parser {
             self.consume(TokenType::Colon)?;
             let right = self.expression(prec)?;
             left = Expr::Conditional(Box::new(left), Box::new(middle), Box::new(right));
+         } else if self.match_token(TokenType::DoublePlus) || self.match_token(TokenType::DoubleDash) {
+            let line_number = self.previous().as_ref().unwrap().line_number;
+            let op =
+               if self.previous().take().unwrap().token_type == TokenType::DoublePlus {
+                  UnaryOp::PostIncrement
+               } else {
+                  UnaryOp::PostDecrement
+               };
+            left = Expr::UnaryOp(op, Box::new(left), line_number);
          } else {
             break;
          }
@@ -476,8 +489,9 @@ impl Parser {
 
    fn unary(&mut self) -> Result<Expr> {
       let unary_op = self.previous().as_ref().unwrap().token_type.to_unary_op();
+      let line_number = self.previous().as_ref().unwrap().line_number;
       let expr = self.factor()?;
-      Ok(Expr::UnaryOp(unary_op, Box::new(expr)))
+      Ok(Expr::UnaryOp(unary_op, Box::new(expr), line_number))
    }
 
    fn arg(&mut self) -> Result<Expr> {
@@ -506,8 +520,8 @@ impl Parser {
             },
             TokenType::OpenParen => {
                self.advance();
-               let precedence = self.peek().as_ref().unwrap().token_type.precedence();
-               let expr = self.expression(precedence)?;
+               // let precedence = self.peek().as_ref().unwrap().token_type.precedence();
+               let expr = self.expression(Precedence::None)?;
                self.consume(TokenType::CloseParen)?;
                Ok(expr)
             },

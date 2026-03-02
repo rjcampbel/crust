@@ -272,7 +272,14 @@ fn typecheck_expr(expr: &Expr, symbol_table: &mut SymbolTable) -> Result<()> {
          typecheck_expr(right, symbol_table)?;
       },
       Expr::Integer(_) => (),
-      Expr::UnaryOp(_, expr) => {
+      Expr::UnaryOp(UnaryOp::PreIncrement | UnaryOp::PreDecrement | UnaryOp::PostIncrement | UnaryOp::PostDecrement, expr, line_number) => {
+         if let Expr::Var(_, _) = **expr {
+            typecheck_expr(expr, symbol_table)?;
+         } else {
+            bail!(error::error(*line_number, format!("Invalid lvalue"), error::ErrorType::SemanticError))
+         }
+      }
+      Expr::UnaryOp(_, expr, _) => {
          typecheck_expr(expr, symbol_table)?;
       },
       Expr::Conditional(condition, middle, right) => {

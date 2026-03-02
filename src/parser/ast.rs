@@ -66,7 +66,7 @@ pub enum Stmt {
 pub enum Expr {
    Integer(i64),
    Var(String, usize),
-   UnaryOp(UnaryOp, Box<Expr>),
+   UnaryOp(UnaryOp, Box<Expr>, usize),
    BinaryOp(BinaryOp, Box<Expr>, Box<Expr>),
    Assignment(Box<Expr>, Box<Expr>, usize),
    Conditional(Box<Expr>, Box<Expr>, Box<Expr>),
@@ -80,6 +80,8 @@ pub enum UnaryOp {
    Not,
    PreIncrement,
    PreDecrement,
+   PostIncrement,
+   PostDecrement,
 }
 
 #[derive(Clone)]
