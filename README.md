@@ -41,12 +41,12 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
   - [x] Logical Not, Logical And, Logical Or
   - [x] Equal, Not Equal
   - [x] Less Than, Greater Than, Less than or equal, Greater than or equal
-- [ ] Chapter 5 - Local variables
+- [x] Chapter 5 - Local variables
   - [x] Local variable declarations
   - [x] Local variable assignments
   - [x] Local variable resolution
   - [x] Extra Credit: Compound assignment (+=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=)
-  - [ ] Extra Credit: Prefix and postfix increment and decrement
+  - [x] Extra Credit: Prefix and postfix increment and decrement
 - [ ] Chapter 6 - If Statements and Conditional Expressions
   - [x] If/Else statements without compound statements
   - [x] Conditional (ternary) operator
@@ -62,7 +62,7 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
   - [x] `continue`, `break`
   - [ ] Extra Credit: `switch` statements
 - [x] Chapter 9 - Functions
-- [ ] Chapter 10 - File Scope Variable Declarations and Storage-Class Specifiers
+- [x] Chapter 10 - File Scope Variable Declarations and Storage-Class Specifiers
 
 ## Tech stack
 
