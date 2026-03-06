@@ -58,6 +58,7 @@ pub enum TokenType {
    Continue,
    Static,
    Extern,
+   Goto,
 
    // Constands/Identifiers
    Integer(i64),
@@ -140,6 +141,7 @@ impl fmt::Display for TokenType {
          TokenType::Comma => write!(f, ","),
          TokenType::Static => write!(f, "STATIC"),
          TokenType::Extern => write!(f, "EXTERN"),
+         TokenType::Goto => write!(f, "GOTO"),
          TokenType::EOF => write!(f, "EOF"),
       }
    }
