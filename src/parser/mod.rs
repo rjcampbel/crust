@@ -464,18 +464,20 @@ impl Parser {
             self.consume(TokenType::Colon)?;
             let right = self.expression(prec)?;
             left = Expr::Conditional(Box::new(left), Box::new(middle), Box::new(right));
-         } else if self.match_token(TokenType::DoublePlus) || self.match_token(TokenType::DoubleDash) {
-            let line_number = self.previous().as_ref().unwrap().line_number;
-            let op =
-               if self.previous().take().unwrap().token_type == TokenType::DoublePlus {
-                  UnaryOp::PostIncrement
-               } else {
-                  UnaryOp::PostDecrement
-               };
-            left = Expr::UnaryOp(op, Box::new(left), line_number);
          } else {
             break;
          }
+      }
+
+      if self.match_token(TokenType::DoublePlus) || self.match_token(TokenType::DoubleDash) {
+         let line_number = self.previous().as_ref().unwrap().line_number;
+         let op =
+            if self.previous().take().unwrap().token_type == TokenType::DoublePlus {
+               UnaryOp::PostIncrement
+            } else {
+               UnaryOp::PostDecrement
+            };
+         left = Expr::UnaryOp(op, Box::new(left), line_number);
       }
       Ok(left)
    }
@@ -510,40 +512,52 @@ impl Parser {
    }
 
    fn factor(&mut self) -> Result<Expr> {
+      let mut expr: Expr;
       if self.match_unary_op() {
-         return self.unary()
+         expr = self.unary()?;
       } else {
-         match self.peek().as_ref().unwrap().token_type {
-            TokenType::Integer(i) => {
-               self.advance();
-               Ok(Expr::Integer(i))
-            },
-            TokenType::OpenParen => {
-               self.advance();
-               // let precedence = self.peek().as_ref().unwrap().token_type.precedence();
-               let expr = self.expression(Precedence::None)?;
-               self.consume(TokenType::CloseParen)?;
-               Ok(expr)
-            },
-            TokenType::Identifier => {
-               let line_number = self.peek().as_ref().unwrap().line_number;
-               let name = self.identifier()?;
-               if self.match_token(TokenType::OpenParen) {
-                  let args = self.args()?;
+         expr =
+            match self.peek().as_ref().unwrap().token_type {
+               TokenType::Integer(i) => {
+                  self.advance();
+                  Expr::Integer(i)
+               },
+               TokenType::OpenParen => {
+                  self.advance();
+                  let expr = self.expression(Precedence::None)?;
                   self.consume(TokenType::CloseParen)?;
-                  Ok(Expr::FunctionCall(name, args, line_number))
-               } else {
-                  Ok(Expr::Var(name, line_number))
+                  expr
+               },
+               TokenType::Identifier => {
+                  let line_number = self.peek().as_ref().unwrap().line_number;
+                  let name = self.identifier()?;
+                  if self.match_token(TokenType::OpenParen) {
+                     let args = self.args()?;
+                     self.consume(TokenType::CloseParen)?;
+                     Expr::FunctionCall(name, args, line_number)
+                  } else {
+                     Expr::Var(name, line_number)
+                  }
+               },
+               _ => {
+                  let t = self.peek();
+                  bail!(error::error(t.as_ref().unwrap().line_number,
+                                    format!("Expected an expression, found '{}'", t.as_ref().unwrap().lexeme),
+                                    error::ErrorType::SyntaxError))
                }
-            },
-            _ => {
-               let t = self.peek();
-               bail!(error::error(t.as_ref().unwrap().line_number,
-                                  format!("Expected an expression, found '{}'", t.as_ref().unwrap().lexeme),
-                                  error::ErrorType::SyntaxError))
             }
-         }
       }
+      if self.match_token(TokenType::DoublePlus) || self.match_token(TokenType::DoubleDash) {
+         let line_number = self.previous().as_ref().unwrap().line_number;
+         let op =
+            if self.previous().take().unwrap().token_type == TokenType::DoublePlus {
+               UnaryOp::PostIncrement
+            } else {
+               UnaryOp::PostDecrement
+            };
+         expr = Expr::UnaryOp(op, Box::new(expr), line_number);
+      }
+      Ok(expr)
    }
 
    fn consume(&mut self, token_type: TokenType) -> Result<&Option<Token>> {
