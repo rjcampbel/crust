@@ -3,7 +3,7 @@ mod tacky_printer;
 
 use crate::name_generator::{self, gen_label};
 use crate::parser::ast;
-use crate::parser::ast::{AST, BlockItem, Decl, Expr, Stmt, ForInit};
+use crate::parser::ast::{AST, BlockItem, Decl, Expr, Stmt, ForInit, Label};
 use tacky::*;
 use crate::validator::symbol_table::*;
 
@@ -88,16 +88,27 @@ fn generate_var_decl_instrs(decl: ast::VarDecl, instrs: &mut Vec<Instr>, symbol_
     Ok(())
 }
 
+fn add_labels(labels: &Vec<Label>, instrs: &mut Vec<Instr>) {
+    for label in labels {
+        instrs.push(Instr::Label(label.name.clone()));
+    }
+}
+
 fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: &SymbolTable) -> Result<()> {
     match stmt {
-        Stmt::Return(expr) => {
+        Stmt::Return(expr, labels, _) => {
+            add_labels(&labels, instrs);
             gen_return_instrs(expr, instrs)?
         },
-        Stmt::Expression(expr) => {
+        Stmt::Expression(expr, labels, _) => {
+            add_labels(&labels, instrs);
             let _ = gen_expr_instrs(expr, instrs)?;
         },
-        Stmt::Null => (),
-        Stmt::If(condition, then_stmt, else_stmt) => {
+        Stmt::Null(labels, _) => {
+            add_labels(&labels, instrs);
+        },
+        Stmt::If(condition, then_stmt, else_stmt, labels, _) => {
+            add_labels(&labels, instrs);
             let end_label = name_generator::gen_label("end");
             let else_label = name_generator::gen_label("else");
             let condition: Val = gen_expr_instrs(condition, instrs)?;
@@ -110,7 +121,8 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
             }
             instrs.push(Instr::Label(end_label))
         },
-        Stmt::Compound(block) => {
+        Stmt::Compound(block, labels, _) => {
+            add_labels(&labels, instrs);
             for item in block.items {
                 match item {
                     BlockItem::Decl(decl) => {
@@ -124,24 +136,30 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
                 }
             }
         },
-        Stmt::Break(label, _) => {
-            instrs.push(Instr::Jump("break_".to_string() + &label));
+        Stmt::Break(label, labels, _) => {
+            add_labels(&labels, instrs);
+            instrs.push(Instr::Jump("break_".to_string() + &label.name));
         },
-        Stmt::Continue(label, _) => {
-            instrs.push(Instr::Jump("continue_".to_string() + &label));
+        Stmt::Continue(label, labels, _) => {
+            add_labels(&labels, instrs);
+            instrs.push(Instr::Jump("continue_".to_string() + &label.name));
         },
-        Stmt::DoWhile(body, condition, label) => {
+        Stmt::DoWhile(body, condition, labels, _) => {
+            add_labels(&labels, instrs);
             let start_label = gen_label("start");
             instrs.push(Instr::Label(start_label.clone()));
             generate_stmt_instrs(*body, instrs, symbol_table)?;
-            instrs.push(Instr::Label("continue_".to_string() + &label));
+            let loop_label = &labels.last().unwrap().name;
+            instrs.push(Instr::Label("continue_".to_string() + &loop_label));
             let condition = gen_expr_instrs(condition, instrs)?;
             instrs.push(Instr::JumpIfNotZero(condition, start_label));
-            instrs.push(Instr::Label("break_".to_string() + &label));
+            instrs.push(Instr::Label("break_".to_string() + &loop_label));
         },
-        Stmt::While(condition, body, label) => {
-            let continue_label = "continue_".to_string() + &label;
-            let break_label = "break_".to_string() + &label;
+        Stmt::While(condition, body, labels, _) => {
+            add_labels(&labels, instrs);
+            let loop_label = &labels.last().unwrap().name;
+            let continue_label = "continue_".to_string() + &loop_label;
+            let break_label = "break_".to_string() + &loop_label;
             instrs.push(Instr::Label(continue_label.clone()));
             let condition = gen_expr_instrs(condition, instrs)?;
             instrs.push(Instr::JumpIfZero(condition, break_label.clone()));
@@ -149,10 +167,12 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
             instrs.push(Instr::Jump(continue_label));
             instrs.push(Instr::Label(break_label));
         },
-        Stmt::For(init, condition, post, body, label) => {
+        Stmt::For(init, condition, post, body, labels, _) => {
+            add_labels(&labels, instrs);
             let start_label = gen_label("start");
-            let continue_label = "continue_".to_string() + &label;
-            let break_label = "break_".to_string() + &label;
+            let loop_label = &labels.last().unwrap().name;
+            let continue_label = "continue_".to_string() + &loop_label;
+            let break_label = "break_".to_string() + &loop_label;
             if let Some(init) = init {
                 match init {
                     ForInit::Decl(d) => {
@@ -175,6 +195,10 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
             }
             instrs.push(Instr::Jump(start_label));
             instrs.push(Instr::Label(break_label));
+        },
+        Stmt::Goto(label, labels, _) => {
+            add_labels(&labels, instrs);
+            instrs.push(Instr::Jump(label));
         }
     };
     Ok(())

@@ -52,18 +52,18 @@ fn print_block(block: &Block, indent: usize) {
 fn print_stmt(stmt: &Stmt, indent: usize) {
    let indentation = " ".repeat(indent);
    match stmt {
-      Stmt::Return(expr) => {
+      Stmt::Return(expr, _, _) => {
          println!("{}Return:", indentation);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::Expression(expr) => {
+      Stmt::Expression(expr, _, _) => {
          println!("{}Expression:", indentation);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::Null => {
+      Stmt::Null(_, _) => {
          println!("{}NULL", indentation);
       },
-      Stmt::If(expr, then, else_stmt) => {
+      Stmt::If(expr, then, else_stmt, _, _) => {
          println!("{}If ", indentation);
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(then, indent + INDENT_SIZE);
@@ -71,27 +71,27 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
             print_stmt(&stmt, indent + INDENT_SIZE);
          }
       },
-      Stmt::Compound(block) => {
+      Stmt::Compound(block, _, _) => {
          println!("{}Compound:", indentation);
          print_block(block, indent + INDENT_SIZE);
       },
-      Stmt::Break(_, _) => {
+      Stmt::Break(_, _, _) => {
          println!("{}Break", indentation);
       },
-      Stmt::Continue(_, _) => {
+      Stmt::Continue(_, _, _) => {
          println!("{}Continue", indentation);
       },
-      Stmt::While(expr, body, _) => {
+      Stmt::While(expr, body, _, _) => {
          println!("{}While ", indentation);
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(body, indent + INDENT_SIZE);
       },
-      Stmt::DoWhile(body, expr , _) => {
+      Stmt::DoWhile(body, expr , _, _) => {
          println!("{}DoWhile:", indentation);
          print_stmt(body, indent + INDENT_SIZE);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::For(init, condition, increment, body, _) => {
+      Stmt::For(init, condition, increment, body, _, _) => {
          println!("{}For:", indentation);
          match init {
             Some(ForInit::Decl(decl)) => {
@@ -115,6 +115,9 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
             print_expr(post, indent + INDENT_SIZE);
          }
          print_stmt(body, indent + INDENT_SIZE);
+      },
+      Stmt::Goto(label, _, _) => {
+         println!("{}Goto: {}", indentation, label);
       }
    }
 }

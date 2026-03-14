@@ -1,6 +1,8 @@
 mod checker;
 mod labeler;
 mod resolver;
+mod goto;
+
 pub mod symbol_table;
 
 use crate::parser::ast_printer;
@@ -12,6 +14,7 @@ pub fn validate(ast: &mut AST, print_ast: bool) -> Result<()> {
    resolver::resolve_program(&mut ast.program)?;
    checker::typecheck_ast(ast)?;
    labeler::label_program(&mut ast.program)?;
+   goto::validate(&mut ast.program)?;
 
    if print_ast {
       ast_printer::print_ast(&ast);

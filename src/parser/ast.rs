@@ -50,16 +50,44 @@ pub enum ForInit {
 }
 
 pub enum Stmt {
-   Return(Expr),
-   Expression(Expr),
-   If(Expr, Box<Stmt>, Option<Box<Stmt>>),
-   Compound(Block),
-   Break(String, usize),
-   Continue(String, usize),
-   While(Expr, Box<Stmt>, String),
-   DoWhile(Box<Stmt>, Expr, String),
-   For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, String),
-   Null,
+   Return(Expr, Vec<Label>, usize),
+   Expression(Expr, Vec<Label>, usize),
+   If(Expr, Box<Stmt>, Option<Box<Stmt>>, Vec<Label>, usize),
+   Compound(Block, Vec<Label>, usize),
+   Break(Label, Vec<Label>, usize),
+   Continue(Label, Vec<Label>, usize),
+   While(Expr, Box<Stmt>, Vec<Label>, usize),
+   DoWhile(Box<Stmt>, Expr, Vec<Label>, usize),
+   For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, Vec<Label>, usize),
+   Goto(String, Vec<Label>, usize),
+   Null(Vec<Label>, usize),
+}
+
+#[derive(Clone, Eq, Hash)]
+pub struct Label {
+   pub name: String,
+   pub line_number: usize,
+}
+
+impl From<&str> for Label {
+   fn from(item: &str) -> Self {
+      Self { name: item.to_string(), line_number: 0 }
+   }
+}
+
+impl PartialEq for Label {
+   fn eq(&self, label: &Label) -> bool {
+      self.name == label.name
+   }
+}
+
+impl Label {
+   pub fn new(name: String, line_number: usize) -> Self {
+      Self {
+         name,
+         line_number
+      }
+   }
 }
 
 #[derive(Clone)]

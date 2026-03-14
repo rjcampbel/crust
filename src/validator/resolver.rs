@@ -90,41 +90,42 @@ fn resolve_block_item(item: &mut BlockItem, identifier_map: &mut IdentifierMap) 
 
 fn resolve_statement(stmt: &mut Stmt, identifier_map: &mut IdentifierMap) -> Result<()> {
    match stmt {
-      Stmt::Expression(e) => {
+      Stmt::Expression(e, _, _) => {
          resolve_expr(e, identifier_map)?;
       },
-      Stmt::Return(e) => {
+      Stmt::Return(e, _, _) => {
          resolve_expr(e, identifier_map)?;
       },
-      Stmt::Null => (),
-      Stmt::If(expr, then_stmt, else_stmt) => {
+      Stmt::Null(_, _) => (),
+      Stmt::If(expr, then_stmt, else_stmt, _, _) => {
          if let Some(else_stmt) = else_stmt {
             resolve_statement(else_stmt, identifier_map)?;
          }
          resolve_expr(expr, identifier_map)?;
          resolve_statement(then_stmt, identifier_map)?;
       },
-      Stmt::Compound(block) => {
+      Stmt::Compound(block, _, _) => {
          let mut new_variable_map = copy_identifier_map(identifier_map);
          resolve_block(block, &mut new_variable_map)?;
       },
-      Stmt::Break(_, _) => (),
-      Stmt::Continue(_, _) => (),
-      Stmt::While(condition, body, _) => {
+      Stmt::Break(_, _, _) => (),
+      Stmt::Continue(_, _, _) => (),
+      Stmt::While(condition, body, _, _) => {
          resolve_expr(condition, identifier_map)?;
          resolve_statement(body, identifier_map)?;
       },
-      Stmt::DoWhile(body, condition, _) => {
+      Stmt::DoWhile(body, condition, _, _) => {
          resolve_statement(body, identifier_map)?;
          resolve_expr(condition, identifier_map)?;
       },
-      Stmt::For(init, condition, post, body, _) => {
+      Stmt::For(init, condition, post, body, _, _) => {
          let mut new_variable_map = copy_identifier_map(identifier_map);
          resolve_for_init(init, &mut new_variable_map)?;
          resolve_optional_expr(condition, &mut new_variable_map)?;
          resolve_optional_expr(post, &mut new_variable_map)?;
          resolve_statement(body, &mut new_variable_map)?;
       }
+      Stmt::Goto(..) => ()
    }
    Ok(())
 }

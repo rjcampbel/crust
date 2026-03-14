@@ -152,39 +152,40 @@ fn typecheck_block_item(block_item: &BlockItem, symbol_table: &mut SymbolTable) 
 
 fn typecheck_statement(stmt: &Stmt, symbol_table: &mut SymbolTable) -> Result<()> {
    match stmt {
-      Stmt::Expression(e) => {
+      Stmt::Expression(e, _, _) => {
          typecheck_expr(e, symbol_table)?;
       },
-      Stmt::Return(e) => {
+      Stmt::Return(e, _, _) => {
          typecheck_expr(e, symbol_table)?;
       },
-      Stmt::Null => (),
-      Stmt::If(expr, then_stmt, else_stmt) => {
+      Stmt::Null(_, _) => (),
+      Stmt::If(expr, then_stmt, else_stmt, _, _) => {
          if let Some(else_stmt) = else_stmt {
             typecheck_statement(else_stmt, symbol_table)?;
          }
          typecheck_expr(expr, symbol_table)?;
          typecheck_statement(then_stmt, symbol_table)?;
       },
-      Stmt::Compound(block) => {
+      Stmt::Compound(block, _, _) => {
          typecheck_block(block, symbol_table)?;
       },
-      Stmt::Break(_, _) => (),
-      Stmt::Continue(_, _) => (),
-      Stmt::While(condition, body, _) => {
+      Stmt::Break(_, _, _) => (),
+      Stmt::Continue(_, _, _) => (),
+      Stmt::While(condition, body, _, _) => {
          typecheck_expr(condition, symbol_table)?;
          typecheck_statement(body, symbol_table)?;
       },
-      Stmt::DoWhile(body, condition, _) => {
+      Stmt::DoWhile(body, condition, _, _) => {
          typecheck_statement(body, symbol_table)?;
          typecheck_expr(condition, symbol_table)?;
       },
-      Stmt::For(init, condition, post, body, _) => {
+      Stmt::For(init, condition, post, body, _, _) => {
          typecheck_for_init(init, symbol_table)?;
          typecheck_optional_expr(condition, symbol_table)?;
          typecheck_optional_expr(post, symbol_table)?;
          typecheck_statement(body, symbol_table)?;
       }
+      Stmt::Goto(..) => ()
    }
    Ok(())
 }
