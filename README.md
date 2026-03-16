@@ -47,11 +47,11 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
   - [x] Local variable resolution
   - [x] Extra Credit: Compound assignment (+=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>=)
   - [x] Extra Credit: Prefix and postfix increment and decrement
-- [ ] Chapter 6 - If Statements and Conditional Expressions
+- [x] Chapter 6 - If Statements and Conditional Expressions
   - [x] If/Else statements without compound statements
   - [x] Conditional (ternary) operator
   - [x] Function `main` supports all previous chapters plus if and conditional statements and expressions
-  - [ ] Extra Credit: `goto`
+  - [x] Extra Credit: `goto`
 - [x] Chapter 7 - Compound statements
   - [x] Nested scopes 
   - [x] Variable scope resolutions
