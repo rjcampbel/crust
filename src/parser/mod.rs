@@ -337,7 +337,7 @@ impl Parser {
             && self.peek_n(1).as_ref().unwrap().token_type == TokenType::Colon {
          self.advance();
          let line_number = self.previous().as_ref().unwrap().line_number;
-         let label = Label { name: self.peek().as_ref().unwrap().lexeme.clone(), line_number };
+         let label = Label { name: self.previous().as_ref().unwrap().lexeme.clone(), line_number };
          self.advance();
          labels.push(label);
       }
