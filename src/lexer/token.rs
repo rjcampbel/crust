@@ -59,6 +59,9 @@ pub enum TokenType {
    Static,
    Extern,
    Goto,
+   Switch,
+   Case,
+   Default,
 
    // Constands/Identifiers
    Integer(i64),
@@ -142,6 +145,9 @@ impl fmt::Display for TokenType {
          TokenType::Static => write!(f, "STATIC"),
          TokenType::Extern => write!(f, "EXTERN"),
          TokenType::Goto => write!(f, "GOTO"),
+         TokenType::Switch => write!(f, "SWITCH"),
+         TokenType::Case => write!(f, "CASE"),
+         TokenType::Default => write!(f, "DEFAULT"),
          TokenType::EOF => write!(f, "EOF"),
       }
    }

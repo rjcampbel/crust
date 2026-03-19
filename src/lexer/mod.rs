@@ -277,6 +277,9 @@ fn to_keyword(identifier: &str) -> Option<TokenType> {
       "static" => Some(TokenType::Static),
       "extern" => Some(TokenType::Extern),
       "goto" => Some(TokenType::Goto),
+      "switch" => Some(TokenType::Switch),
+      "case" => Some(TokenType::Case),
+      "default" => Some(TokenType::Default),
       _ => None
    }
 }
