@@ -85,6 +85,13 @@ fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
       Stmt::While(_, stmt, _, _) => {
          validate_stmt_goto_stmts(stmt, labels)?
       },
+      Stmt::Switch(_, stmt, _) => {
+         validate_stmt_goto_stmts(stmt, labels)?;
+      },
+      Stmt::Case(_, stmt, _) => {
+         validate_stmt_goto_stmts(stmt, labels)?;
+      },
+      Stmt::Default(_, _) => (),
       _ => todo!()
    }
    Ok(())
