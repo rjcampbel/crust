@@ -29,18 +29,20 @@ fn label_block(block: &mut Block, loop_label: &Option<Label>) -> Result<()> {
 fn label_block_item(item: &mut BlockItem, loop_label: &Option<Label>) -> Result<()> {
    match item {
       BlockItem::Stmt(stmt) => {
-         label_statement(stmt, loop_label)?;
+         label_statement(stmt, loop_label, &None)?;
       },
       _ => ()
    }
    Ok(())
 }
 
-fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>) -> Result<()> {
+fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>, switch_end_label: &Option<Label>) -> Result<()> {
    match stmt {
       Stmt::Break(label, _, line_number) => {
          if let Some(l) = loop_label {
             *label = l.clone();
+         } else if let Some(l) = switch_end_label {
+            *label = l.clone()
          } else {
             bail!(error::error(*line_number, "break statement outside of loop".to_string(), error::ErrorType::SemanticError))
          }
@@ -54,25 +56,32 @@ fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>) -> Result<()> {
       },
       Stmt::While(_, body, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("while"), *line_number);
-         label_statement(body, &Some(new_label.clone()))?;
+         label_statement(body, &Some(new_label.clone()), &None)?;
          labels.push(new_label);
       },
       Stmt::DoWhile(body, _, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("dowhile"), *line_number);
-         label_statement(body, &Some(new_label.clone()))?;
+         label_statement(body, &Some(new_label.clone()), &None)?;
          labels.push(new_label);
       },
       Stmt::For(_, _, _, body, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("for"), *line_number);
-         label_statement(body, &Some(new_label.clone()))?;
+         label_statement(body, &Some(new_label.clone()), &None)?;
          labels.push(new_label);
       },
       Stmt::Compound(block, _, _) => {
          label_block(block, loop_label)?;
       },
       Stmt::If(_, then_stmt, else_stmt, _, _) => {
-         label_statement(then_stmt, loop_label)?;
+         label_statement(then_stmt, loop_label, &None)?;
          label_optional_stmt(else_stmt, loop_label)?;
+      },
+      Stmt::Switch(_, stmt, line_number) => {
+         let end_label = Label::new(name_generator::gen_label("switch_end"), *line_number);
+         label_statement(stmt, loop_label, &Some(end_label.clone()))?;
+      },
+      Stmt::Case(_, stmt, _) => {
+         label_statement(stmt, loop_label, &None)?;
       },
       _ => ()
    }
@@ -81,7 +90,7 @@ fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>) -> Result<()> {
 
 fn label_optional_stmt(stmt: &mut Option<Box<Stmt>>, loop_label: &Option<Label>) -> Result<()> {
    if let Some(s) = stmt {
-      label_statement(s, loop_label)?;
+      label_statement(s, loop_label, &None)?;
    }
    Ok(())
 }
