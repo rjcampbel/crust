@@ -125,7 +125,8 @@ fn resolve_statement(stmt: &mut Stmt, identifier_map: &mut IdentifierMap) -> Res
          resolve_optional_expr(post, &mut new_variable_map)?;
          resolve_statement(body, &mut new_variable_map)?;
       }
-      Stmt::Goto(..) => ()
+      Stmt::Goto(..) => (),
+      _ => todo!()
    }
    Ok(())
 }

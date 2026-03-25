@@ -84,7 +84,8 @@ fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
       Stmt::Return(_, _, _) => (),
       Stmt::While(_, stmt, _, _) => {
          validate_stmt_goto_stmts(stmt, labels)?
-      }
+      },
+      _ => todo!()
    }
    Ok(())
 }
@@ -157,7 +158,8 @@ fn validate_stmt_labels(stmt: &mut Stmt, labels: &mut Labels) -> Result<()> {
       Stmt::While(_, stmt, stmt_labels, _) => {
          validate_stmt_labels(stmt, labels)?;
          validate_labels(stmt_labels, labels)?
-      }
+      },
+      _ => todo!()
    }
    Ok(())
 }

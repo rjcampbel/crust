@@ -432,7 +432,31 @@ impl Parser {
             let label = self.previous().as_ref().unwrap().lexeme.clone();
             self.consume(TokenType::Semicolon)?;
             Ok(Stmt::Goto(label, labels, line_number))
-         }
+         },
+         TokenType::Switch => {
+            self.advance();
+            let line_number = self.previous().as_ref().unwrap().line_number;
+            self.consume(TokenType::OpenParen)?;
+            let expr = self.expression(Precedence::None)?;
+            self.consume(TokenType::CloseParen)?;
+            let stmt = self.statement()?;
+            Ok(Stmt::Switch(expr, Box::new(stmt), line_number))
+         },
+         TokenType::Case => {
+            self.advance();
+            let line_number = self.previous().as_ref().unwrap().line_number;
+            let expr = self.expression(Precedence::None)?;
+            self.consume(TokenType::Colon)?;
+            let stmt = self.statement()?;
+            Ok(Stmt::Case(expr, Box::new(stmt), line_number))
+         },
+         TokenType::Default => {
+            self.advance();
+            let line_number = self.previous().as_ref().unwrap().line_number;
+            self.consume(TokenType::Colon)?;
+            let stmt = self.statement()?;
+            Ok(Stmt::Default(Box::new(stmt), line_number))
+         },
          _ => {
             let line_number = self.peek().as_ref().unwrap().line_number;
             let expr = self.expression(Precedence::None)?;

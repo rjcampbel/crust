@@ -185,7 +185,8 @@ fn typecheck_statement(stmt: &Stmt, symbol_table: &mut SymbolTable) -> Result<()
          typecheck_optional_expr(post, symbol_table)?;
          typecheck_statement(body, symbol_table)?;
       }
-      Stmt::Goto(..) => ()
+      Stmt::Goto(..) => (),
+      _ => todo!()
    }
    Ok(())
 }

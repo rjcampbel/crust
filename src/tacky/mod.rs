@@ -199,7 +199,8 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
         Stmt::Goto(label, labels, _) => {
             add_labels(&labels, instrs);
             instrs.push(Instr::Jump(label));
-        }
+        },
+        _ => todo!()
     };
     Ok(())
 }

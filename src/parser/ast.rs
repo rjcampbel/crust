@@ -60,6 +60,9 @@ pub enum Stmt {
    DoWhile(Box<Stmt>, Expr, Vec<Label>, usize),
    For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, Vec<Label>, usize),
    Goto(String, Vec<Label>, usize),
+   Switch(Expr, Box<Stmt>, usize),
+   Case(Expr, Box<Stmt>, usize),
+   Default(Box<Stmt>, usize),
    Null(Vec<Label>, usize),
 }
 
