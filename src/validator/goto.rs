@@ -92,7 +92,6 @@ fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
          validate_stmt_goto_stmts(stmt, labels)?;
       },
       Stmt::Default(_, _) => (),
-      _ => todo!()
    }
    Ok(())
 }
