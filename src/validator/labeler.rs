@@ -44,14 +44,14 @@ fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>, switch_end_label
          } else if let Some(l) = switch_end_label {
             *label = l.clone()
          } else {
-            bail!(error::error(*line_number, "break statement outside of loop".to_string(), error::ErrorType::SemanticError))
+            bail!(error::error(*line_number, format!("break statement outside of loop or switch statement"), error::ErrorType::SemanticError))
          }
       },
       Stmt::Continue(label, _, line_number) => {
          if let Some(l) = loop_label {
             *label = l.clone();
          } else {
-            bail!(error::error(*line_number, "continue outside of loop".to_string(), error::ErrorType::SemanticError))
+            bail!(error::error(*line_number, format!("continue outside of loop"), error::ErrorType::SemanticError))
          }
       },
       Stmt::While(_, body, labels, line_number) => {
