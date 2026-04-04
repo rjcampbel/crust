@@ -1,15 +1,8 @@
-use anyhow::{Result, bail};
-use crate::error::{self, error};
+use anyhow::Result;
 use crate::parser::ast::*;
 
-use std::collections::HashSet;
-
 struct SwitchInfo {
-   pub cases: Option<Cases>,
-   pub default: Option<Stmt>,
 }
-
-type Cases = HashSet<Expr>;
 
 pub fn validate(program: &mut Program) -> Result<()> {
    for decl in &mut program.decls {
@@ -67,33 +60,8 @@ fn validate_stmt_switch_stmts(stmt: &mut Stmt, switch_info: &mut Option<SwitchIn
          validate_stmt_switch_stmts(stmt, switch_info)?
       },
       Stmt::Switch(_, stmt, _, _) => {
-         let new_switch_info = SwitchInfo { cases: None, default: None };
+         let new_switch_info = SwitchInfo {  };
          validate_stmt_switch_stmts(stmt, &mut Some(new_switch_info))?;
-      },
-      Stmt::Case(expr, stmt, _, line_number) => {
-         let Expr::Integer(_) = expr else {
-            bail!(error(*line_number, format!("case label must be a constant expression"), error::ErrorType::SemanticError));
-         };
-         if let Some(s) = switch_info {
-            let cases = s.cases.get_or_insert_with(|| HashSet::new());
-            if !cases.insert(expr.clone()) {
-                bail!(error(*line_number, format!("duplicate case label"), error::ErrorType::SemanticError));
-            }
-            validate_stmt_switch_stmts(stmt, switch_info)?;
-         } else {
-            bail!(error(*line_number, format!("case statement outside of switch"), error::ErrorType::SemanticError));
-         }
-      },
-      Stmt::Default(stmt, _, line_number) => {
-         if let Some(s) = switch_info {
-            if s.default.is_some() {
-               bail!(error(*line_number, format!("multiple default labels in one switch"), error::ErrorType::SemanticError));
-            }
-            s.default = Some(*stmt.clone());
-            validate_stmt_switch_stmts(stmt, switch_info)?;
-         } else {
-            bail!(error::error(*line_number, format!("default statement outside of switch"), error::ErrorType::SemanticError));
-         }
       },
       _=> ()
    }

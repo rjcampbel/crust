@@ -121,15 +121,6 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(stmt, indent + INDENT_SIZE);
       },
-      Stmt::Case(expr, stmt, ..) => {
-         println!("{}Case:", indentation);
-         print_expr(expr, indent + INDENT_SIZE);
-         print_stmt(stmt, indent + INDENT_SIZE);
-      },
-      Stmt::Default(stmt, ..) => {
-         println!("{}Default:", indentation);
-         print_stmt(stmt, indent + INDENT_SIZE);
-      },
       Stmt::Goto(label, _, _) => {
          println!("{}Goto: {}", indentation, label);
       }

@@ -57,10 +57,10 @@ pub enum ForInit {
 
 #[derive(Clone)]
 pub enum Stmt {
-   Return(Expr, Vec<Label>, usize),
-   Expression(Expr, Vec<Label>, usize),
-   If(Expr, Box<Stmt>, Option<Box<Stmt>>, Vec<Label>, usize),
-   Compound(Block, Vec<Label>, usize),
+   Return(Expr, Vec<Label>, ()),
+   Expression(Expr, Vec<Label>, ()),
+   If(Expr, Box<Stmt>, Option<Box<Stmt>>, Vec<Label>, ()),
+   Compound(Block, Vec<Label>, ()),
    Break(Label, Vec<Label>, usize),
    Continue(Label, Vec<Label>, usize),
    While(Expr, Box<Stmt>, Vec<Label>, usize),
@@ -68,20 +68,19 @@ pub enum Stmt {
    For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, Vec<Label>, usize),
    Goto(String, Vec<Label>, usize),
    Switch(Expr, Box<Stmt>, Vec<Label>, usize),
-   Case(Expr, Box<Stmt>, Vec<Label>, usize),
-   Default(Box<Stmt>, Vec<Label>, usize),
-   Null(Vec<Label>, usize),
+   Null(Vec<Label>, ()),
 }
 
 #[derive(Clone, Eq, Hash)]
 pub struct Label {
    pub name: String,
+   pub expr: Option<Expr>,
    pub line_number: usize,
 }
 
 impl From<&str> for Label {
    fn from(item: &str) -> Self {
-      Self { name: item.to_string(), line_number: 0 }
+      Self { name: item.to_string(), expr: None, line_number: 0 }
    }
 }
 
@@ -95,6 +94,7 @@ impl Label {
    pub fn new(name: String, line_number: usize) -> Self {
       Self {
          name,
+         expr: None,
          line_number
       }
    }

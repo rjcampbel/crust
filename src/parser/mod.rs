@@ -333,13 +333,40 @@ impl Parser {
 
    fn labels(&mut self) -> Result<Vec<Label>> {
       let mut labels = Vec::new();
-      while self.peek().as_ref().unwrap().token_type == TokenType::Identifier
-            && self.peek_n(1).as_ref().unwrap().token_type == TokenType::Colon {
-         self.advance();
-         let line_number = self.previous().as_ref().unwrap().line_number;
-         let label = Label { name: self.previous().as_ref().unwrap().lexeme.clone(), line_number };
-         self.advance();
-         labels.push(label);
+
+      loop {
+         match self.peek().as_ref().unwrap().token_type.clone() {
+            TokenType::Identifier => {
+               if self.peek_n(1).as_ref().unwrap().token_type == TokenType::Colon {
+                  self.advance();
+                  let line_number = self.previous().as_ref().unwrap().line_number;
+                  let label = Label::new(self.previous().as_ref().unwrap().lexeme.clone(), line_number);
+                  self.advance();
+                  labels.push(label);
+               } else {
+                  break;
+               }
+            },
+            TokenType::Default => {
+               self.advance();
+               let line_number = self.previous().as_ref().unwrap().line_number;
+               let label = Label::new(self.previous().as_ref().unwrap().lexeme.clone(), line_number);
+               self.consume(TokenType::Colon)?;
+               labels.push(label);
+            },
+            TokenType::Case => {
+               self.advance();
+               let line_number = self.previous().as_ref().unwrap().line_number;
+               let name = self.previous().as_ref().unwrap().lexeme.clone();
+               let expr = Some(self.expression(Precedence::None)?);
+               let label = Label { name , expr, line_number };
+               labels.push(label);
+               self.consume(TokenType::Colon)?;
+            },
+            _ => {
+               break;
+            }
+         }
       }
       Ok(labels)
    }
@@ -349,19 +376,16 @@ impl Parser {
       match self.peek().as_ref().unwrap().token_type {
          TokenType::Return => {
             self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::Semicolon)?;
-            return Ok(Stmt::Return(expr, labels, line_number))
+            return Ok(Stmt::Return(expr, labels, ()))
          },
          TokenType::Semicolon => {
             self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
-            return Ok(Stmt::Null(labels, line_number));
+            return Ok(Stmt::Null(labels, ()));
          },
          TokenType::If => {
             self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
             self.consume(TokenType::OpenParen)?;
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::CloseParen)?;
@@ -372,14 +396,13 @@ impl Parser {
             } else {
                None
             };
-            return Ok(Stmt::If(expr, Box::new(then_stmt), else_stmt, labels, line_number));
+            return Ok(Stmt::If(expr, Box::new(then_stmt), else_stmt, labels, ()));
          },
          TokenType::OpenBrace => {
             self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
             let block = self.block()?;
             self.consume(TokenType::CloseBrace)?;
-            return Ok(Stmt::Compound(block, labels, line_number));
+            return Ok(Stmt::Compound(block, labels, ()));
          },
          TokenType::Break => {
             self.advance();
@@ -442,26 +465,10 @@ impl Parser {
             let stmt = self.statement()?;
             Ok(Stmt::Switch(expr, Box::new(stmt), labels, line_number))
          },
-         TokenType::Case => {
-            self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
-            let expr = self.expression(Precedence::None)?;
-            self.consume(TokenType::Colon)?;
-            let stmt = self.statement()?;
-            Ok(Stmt::Case(expr, Box::new(stmt), labels, line_number))
-         },
-         TokenType::Default => {
-            self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
-            self.consume(TokenType::Colon)?;
-            let stmt = self.statement()?;
-            Ok(Stmt::Default(Box::new(stmt), labels, line_number))
-         },
          _ => {
-            let line_number = self.peek().as_ref().unwrap().line_number;
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::Semicolon)?;
-            return Ok(Stmt::Expression(expr, labels, line_number));
+            return Ok(Stmt::Expression(expr, labels, ()));
          }
       }
    }

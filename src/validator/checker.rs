@@ -190,13 +190,6 @@ fn typecheck_statement(stmt: &Stmt, symbol_table: &mut SymbolTable) -> Result<()
          typecheck_expr(expr, symbol_table)?;
          typecheck_statement(stmt, symbol_table)?;
       },
-      Stmt::Case(expr, stmt, _, _) => {
-         typecheck_expr(expr, symbol_table)?;
-         typecheck_statement(stmt, symbol_table)?;
-      },
-      Stmt::Default(stmt, _, _) => {
-         typecheck_statement(stmt, symbol_table)?;
-      }
    }
    Ok(())
 }

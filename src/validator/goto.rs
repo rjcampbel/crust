@@ -88,10 +88,6 @@ fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
       Stmt::Switch(_, stmt, _, _) => {
          validate_stmt_goto_stmts(stmt, labels)?;
       },
-      Stmt::Case(_, stmt, _, _) => {
-         validate_stmt_goto_stmts(stmt, labels)?;
-      },
-      Stmt::Default(_, _, _) => (),
    }
    Ok(())
 }
@@ -169,14 +165,6 @@ fn validate_stmt_labels(stmt: &mut Stmt, labels: &mut Labels) -> Result<()> {
          validate_stmt_labels(stmt, labels)?;
          validate_labels(stmt_labels, labels)?
       },
-      Stmt::Case(_, stmt, stmt_labels, _) => {
-         validate_stmt_labels(stmt, labels)?;
-         validate_labels(stmt_labels, labels)?
-      },
-      Stmt::Default(stmt, stmt_labels, _) => {
-         validate_stmt_labels(stmt, labels)?;
-         validate_labels(stmt_labels, labels)?
-      }
    }
    Ok(())
 }

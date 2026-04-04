@@ -2,7 +2,6 @@ use anyhow::{Result, bail};
 use crate::error;
 use crate::name_generator;
 use crate::parser::ast::*;
-use crate::validator::switch;
 
 pub fn label_program(program: &mut Program)  -> Result<()> {
    for decl in &mut program.decls {
@@ -81,12 +80,6 @@ fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>, switch_end_label
          let end_label = Label::new(name_generator::gen_label("switch_end"), *line_number);
          label_statement(stmt, loop_label, &Some(end_label.clone()))?;
       },
-      Stmt::Case(_, stmt, _, _) => {
-         label_statement(stmt, loop_label, &switch_end_label)?;
-      },
-      Stmt::Default(stmt, _, _) => {
-         label_statement(stmt, loop_label, &switch_end_label)?;
-      }
       _ => ()
    }
    Ok(())
