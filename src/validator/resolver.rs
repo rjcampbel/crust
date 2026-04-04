@@ -126,15 +126,15 @@ fn resolve_statement(stmt: &mut Stmt, identifier_map: &mut IdentifierMap) -> Res
          resolve_statement(body, &mut new_variable_map)?;
       }
       Stmt::Goto(..) => (),
-      Stmt::Switch(expr, stmt, _) => {
+      Stmt::Switch(expr, stmt, _, _) => {
          resolve_expr(expr, identifier_map)?;
          resolve_statement(stmt, identifier_map)?;
       },
-      Stmt::Case(expr, stmt, _) => {
+      Stmt::Case(expr, stmt, _, _) => {
          resolve_expr(expr, identifier_map)?;
          resolve_statement(stmt, identifier_map)?;
       },
-      Stmt::Default(stmt, _) => {
+      Stmt::Default(stmt, _, _) => {
          resolve_statement(stmt, identifier_map)?;
       }
    }

@@ -2,6 +2,7 @@ use anyhow::{Result, bail};
 use crate::error;
 use crate::name_generator;
 use crate::parser::ast::*;
+use crate::validator::switch;
 
 pub fn label_program(program: &mut Program)  -> Result<()> {
    for decl in &mut program.decls {
@@ -56,41 +57,44 @@ fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>, switch_end_label
       },
       Stmt::While(_, body, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("while"), *line_number);
-         label_statement(body, &Some(new_label.clone()), &None)?;
+         label_statement(body, &Some(new_label.clone()), &switch_end_label)?;
          labels.push(new_label);
       },
       Stmt::DoWhile(body, _, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("dowhile"), *line_number);
-         label_statement(body, &Some(new_label.clone()), &None)?;
+         label_statement(body, &Some(new_label.clone()), &switch_end_label)?;
          labels.push(new_label);
       },
       Stmt::For(_, _, _, body, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("for"), *line_number);
-         label_statement(body, &Some(new_label.clone()), &None)?;
+         label_statement(body, &Some(new_label.clone()), &switch_end_label)?;
          labels.push(new_label);
       },
       Stmt::Compound(block, _, _) => {
          label_block(block, loop_label)?;
       },
       Stmt::If(_, then_stmt, else_stmt, _, _) => {
-         label_statement(then_stmt, loop_label, &None)?;
-         label_optional_stmt(else_stmt, loop_label)?;
+         label_statement(then_stmt, loop_label, &switch_end_label)?;
+         label_optional_stmt(else_stmt, loop_label, &switch_end_label)?;
       },
-      Stmt::Switch(_, stmt, line_number) => {
+      Stmt::Switch(_, stmt, _, line_number) => {
          let end_label = Label::new(name_generator::gen_label("switch_end"), *line_number);
          label_statement(stmt, loop_label, &Some(end_label.clone()))?;
       },
-      Stmt::Case(_, stmt, _) => {
-         label_statement(stmt, loop_label, &None)?;
+      Stmt::Case(_, stmt, _, _) => {
+         label_statement(stmt, loop_label, &switch_end_label)?;
       },
+      Stmt::Default(stmt, _, _) => {
+         label_statement(stmt, loop_label, &switch_end_label)?;
+      }
       _ => ()
    }
    Ok(())
 }
 
-fn label_optional_stmt(stmt: &mut Option<Box<Stmt>>, loop_label: &Option<Label>) -> Result<()> {
+fn label_optional_stmt(stmt: &mut Option<Box<Stmt>>, loop_label: &Option<Label>, switch_end_label: &Option<Label>) -> Result<()> {
    if let Some(s) = stmt {
-      label_statement(s, loop_label, &None)?;
+      label_statement(s, loop_label, &switch_end_label)?;
    }
    Ok(())
 }

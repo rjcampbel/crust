@@ -440,7 +440,7 @@ impl Parser {
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::CloseParen)?;
             let stmt = self.statement()?;
-            Ok(Stmt::Switch(expr, Box::new(stmt), line_number))
+            Ok(Stmt::Switch(expr, Box::new(stmt), labels, line_number))
          },
          TokenType::Case => {
             self.advance();
@@ -448,14 +448,14 @@ impl Parser {
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::Colon)?;
             let stmt = self.statement()?;
-            Ok(Stmt::Case(expr, Box::new(stmt), line_number))
+            Ok(Stmt::Case(expr, Box::new(stmt), labels, line_number))
          },
          TokenType::Default => {
             self.advance();
             let line_number = self.previous().as_ref().unwrap().line_number;
             self.consume(TokenType::Colon)?;
             let stmt = self.statement()?;
-            Ok(Stmt::Default(Box::new(stmt), line_number))
+            Ok(Stmt::Default(Box::new(stmt), labels, line_number))
          },
          _ => {
             let line_number = self.peek().as_ref().unwrap().line_number;

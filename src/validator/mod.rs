@@ -2,6 +2,7 @@ mod checker;
 mod labeler;
 mod resolver;
 mod goto;
+mod switch;
 
 pub mod symbol_table;
 
@@ -15,6 +16,7 @@ pub fn validate(ast: &mut AST, print_ast: bool) -> Result<()> {
    checker::typecheck_ast(ast)?;
    labeler::label_program(&mut ast.program)?;
    goto::validate(&mut ast.program)?;
+   switch::validate(&mut ast.program)?;
 
    if print_ast {
       ast_printer::print_ast(&ast);

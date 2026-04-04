@@ -9,6 +9,7 @@ pub struct Program {
    pub decls: Vec<Decl>,
 }
 
+#[derive(Clone)]
 pub struct FuncDecl {
    pub name: String,
    pub params: Vec<String>,
@@ -17,6 +18,7 @@ pub struct FuncDecl {
    pub line_number: usize,
 }
 
+#[derive(Clone)]
 pub struct VarDecl {
    pub name: String,
    pub init: Option<Expr>,
@@ -30,25 +32,30 @@ pub enum StorageClass {
    Extern,
 }
 
+#[derive(Clone)]
 pub struct Block {
    pub items: Vec<BlockItem>,
 }
 
+#[derive(Clone)]
 pub enum BlockItem {
    Stmt(Stmt),
    Decl(Decl)
 }
 
+#[derive(Clone)]
 pub enum Decl {
    VarDecl(VarDecl),
    FuncDecl(FuncDecl)
 }
 
+#[derive(Clone)]
 pub enum ForInit {
    Decl(VarDecl),
    Expr(Expr),
 }
 
+#[derive(Clone)]
 pub enum Stmt {
    Return(Expr, Vec<Label>, usize),
    Expression(Expr, Vec<Label>, usize),
@@ -60,9 +67,9 @@ pub enum Stmt {
    DoWhile(Box<Stmt>, Expr, Vec<Label>, usize),
    For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, Vec<Label>, usize),
    Goto(String, Vec<Label>, usize),
-   Switch(Expr, Box<Stmt>, usize),
-   Case(Expr, Box<Stmt>, usize),
-   Default(Box<Stmt>, usize),
+   Switch(Expr, Box<Stmt>, Vec<Label>, usize),
+   Case(Expr, Box<Stmt>, Vec<Label>, usize),
+   Default(Box<Stmt>, Vec<Label>, usize),
    Null(Vec<Label>, usize),
 }
 
@@ -93,7 +100,7 @@ impl Label {
    }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
    Integer(i64),
    Var(String, usize),
@@ -104,7 +111,7 @@ pub enum Expr {
    FunctionCall(String, Vec<Expr>, usize),
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum UnaryOp {
    Complement,
    Negate,
@@ -115,7 +122,7 @@ pub enum UnaryOp {
    PostDecrement,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum BinaryOp {
    Add,
    Subtract,
