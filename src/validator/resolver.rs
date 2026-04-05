@@ -126,7 +126,7 @@ fn resolve_statement(stmt: &mut Stmt, identifier_map: &mut IdentifierMap) -> Res
          resolve_statement(body, &mut new_variable_map)?;
       }
       Stmt::Goto(..) => (),
-      Stmt::Switch(expr, stmt, _, _) => {
+      Stmt::Switch(expr, stmt, _, _, _) => {
          resolve_expr(expr, identifier_map)?;
          resolve_statement(stmt, identifier_map)?;
       },

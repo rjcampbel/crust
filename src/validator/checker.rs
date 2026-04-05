@@ -186,7 +186,7 @@ fn typecheck_statement(stmt: &Stmt, symbol_table: &mut SymbolTable) -> Result<()
          typecheck_statement(body, symbol_table)?;
       }
       Stmt::Goto(..) => (),
-      Stmt::Switch(expr, stmt, _, _) => {
+      Stmt::Switch(expr, stmt, _, _, _) => {
          typecheck_expr(expr, symbol_table)?;
          typecheck_statement(stmt, symbol_table)?;
       },

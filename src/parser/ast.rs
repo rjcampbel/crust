@@ -1,5 +1,8 @@
 use crate::validator::symbol_table::SymbolTable;
 
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
 pub struct AST {
    pub program: Program,
    pub symbol_table: SymbolTable,
@@ -67,20 +70,45 @@ pub enum Stmt {
    DoWhile(Box<Stmt>, Expr, Vec<Label>, usize),
    For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, Vec<Label>, usize),
    Goto(String, Vec<Label>, usize),
-   Switch(Expr, Box<Stmt>, Vec<Label>, usize),
+   Switch(Expr, Box<Stmt>, Vec<Label>, SwitchInfo, usize),
    Null(Vec<Label>, ()),
+}
+
+#[derive(Clone)]
+pub struct SwitchInfo {
+   pub cases: HashSet<CaseInfo>,
+   pub default: Option<()>,
+}
+
+#[derive(Clone)]
+pub struct CaseInfo {
+   pub value: Expr,
+   pub line_number: usize,
+}
+
+impl Eq for CaseInfo {}
+
+impl Hash for CaseInfo {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.value.hash(state);
+    }
+}
+
+impl PartialEq for CaseInfo {
+   fn eq(&self, other: &CaseInfo) -> bool {
+      self.value == other.value
+   }
 }
 
 #[derive(Clone, Eq, Hash)]
 pub struct Label {
    pub name: String,
-   pub expr: Option<Expr>,
    pub line_number: usize,
 }
 
 impl From<&str> for Label {
    fn from(item: &str) -> Self {
-      Self { name: item.to_string(), expr: None, line_number: 0 }
+      Self { name: item.to_string(), line_number: 0 }
    }
 }
 
@@ -94,7 +122,6 @@ impl Label {
    pub fn new(name: String, line_number: usize) -> Self {
       Self {
          name,
-         expr: None,
          line_number
       }
    }

@@ -55,8 +55,7 @@ fn validate_block_goto_stmts(block: &mut Block, labels: &Labels) -> Result<()> {
 
 fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
    match stmt {
-      Stmt::Break(label, _, line_number) => {
-         validate_jump_label(&mut label.name, labels, *line_number)?
+      Stmt::Break(_, _, _) => {
       },
       Stmt::Compound(block, _, _) => {
          validate_block_goto_stmts(block, labels)?
@@ -85,7 +84,7 @@ fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
       Stmt::While(_, stmt, _, _) => {
          validate_stmt_goto_stmts(stmt, labels)?
       },
-      Stmt::Switch(_, stmt, _, _) => {
+      Stmt::Switch(_, stmt, _, _, _) => {
          validate_stmt_goto_stmts(stmt, labels)?;
       },
    }
@@ -161,7 +160,7 @@ fn validate_stmt_labels(stmt: &mut Stmt, labels: &mut Labels) -> Result<()> {
          validate_stmt_labels(stmt, labels)?;
          validate_labels(stmt_labels, labels)?
       },
-      Stmt::Switch(_, stmt, stmt_labels, _) => {
+      Stmt::Switch(_, stmt, stmt_labels, _, _) => {
          validate_stmt_labels(stmt, labels)?;
          validate_labels(stmt_labels, labels)?
       },
@@ -177,12 +176,14 @@ fn validate_labels(stmt_labels: &mut Vec<Label>, func_labels: &mut Labels) -> Re
 }
 
 fn validate_label(stmt_label: &mut Label, func_labels: &mut Labels) -> Result<()> {
-   if let Some(label) = func_labels.get(&stmt_label.name) {
-      bail!(error(stmt_label.line_number, format!("Duplicate label: {}", label), error::ErrorType::SemanticError))
-   } else {
-      let unique_name = name_generator::uniquify_identifier(&stmt_label.name);
-      func_labels.insert(stmt_label.name.clone(), unique_name.clone());
-      stmt_label.name = unique_name.clone();
+   if stmt_label.name != "case" && stmt_label.name != "default" {
+      if let Some(label) = func_labels.get(&stmt_label.name) {
+            bail!(error(stmt_label.line_number, format!("Duplicate label: {}", label), error::ErrorType::SemanticError))
+      } else {
+         let unique_name = name_generator::uniquify_identifier(&stmt_label.name);
+         func_labels.insert(stmt_label.name.clone(), unique_name.clone());
+         stmt_label.name = unique_name.clone();
+      }
    }
    Ok(())
 }

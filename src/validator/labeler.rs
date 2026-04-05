@@ -14,22 +14,22 @@ pub fn label_program(program: &mut Program)  -> Result<()> {
 
 fn label_func_decl(decl: &mut FuncDecl) -> Result<()> {
    if let Some(body) = &mut decl.body {
-      label_block(body, &None)?;
+      label_block(body, &None, &None)?;
    }
    Ok(())
 }
 
-fn label_block(block: &mut Block, loop_label: &Option<Label>) -> Result<()> {
+fn label_block(block: &mut Block, loop_label: &Option<Label>, switch_end_label: &Option<Label>) -> Result<()> {
    for block_item in &mut *block.items {
-      label_block_item(block_item, &loop_label)?;
+      label_block_item(block_item, &loop_label, switch_end_label)?;
    }
    Ok(())
 }
 
-fn label_block_item(item: &mut BlockItem, loop_label: &Option<Label>) -> Result<()> {
+fn label_block_item(item: &mut BlockItem, loop_label: &Option<Label>, switch_end_label: &Option<Label>) -> Result<()> {
    match item {
       BlockItem::Stmt(stmt) => {
-         label_statement(stmt, loop_label, &None)?;
+         label_statement(stmt, loop_label, switch_end_label)?;
       },
       _ => ()
    }
@@ -56,31 +56,34 @@ fn label_statement(stmt: &mut Stmt, loop_label: &Option<Label>, switch_end_label
       },
       Stmt::While(_, body, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("while"), *line_number);
-         label_statement(body, &Some(new_label.clone()), &switch_end_label)?;
+         label_statement(body, &Some(new_label.clone()), switch_end_label)?;
          labels.push(new_label);
       },
       Stmt::DoWhile(body, _, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("dowhile"), *line_number);
-         label_statement(body, &Some(new_label.clone()), &switch_end_label)?;
+         label_statement(body, &Some(new_label.clone()), switch_end_label)?;
          labels.push(new_label);
       },
       Stmt::For(_, _, _, body, labels, line_number) => {
          let new_label = Label::new(name_generator::gen_label("for"), *line_number);
-         label_statement(body, &Some(new_label.clone()), &switch_end_label)?;
+         label_statement(body, &Some(new_label.clone()), switch_end_label)?;
          labels.push(new_label);
       },
       Stmt::Compound(block, _, _) => {
-         label_block(block, loop_label)?;
+         label_block(block, loop_label, switch_end_label)?;
       },
       Stmt::If(_, then_stmt, else_stmt, _, _) => {
-         label_statement(then_stmt, loop_label, &switch_end_label)?;
-         label_optional_stmt(else_stmt, loop_label, &switch_end_label)?;
+         label_statement(then_stmt, loop_label, switch_end_label)?;
+         label_optional_stmt(else_stmt, loop_label, switch_end_label)?;
       },
-      Stmt::Switch(_, stmt, _, line_number) => {
+      Stmt::Switch(_, stmt, _, _, line_number) => {
          let end_label = Label::new(name_generator::gen_label("switch_end"), *line_number);
          label_statement(stmt, loop_label, &Some(end_label.clone()))?;
       },
-      _ => ()
+      Stmt::Expression(_, _, _) => (),
+      Stmt::Goto(_, _, _) => (),
+      Stmt::Return(_, _, _) => (),
+      Stmt::Null(_, _) => (),
    }
    Ok(())
 }

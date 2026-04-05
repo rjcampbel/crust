@@ -49,50 +49,68 @@ fn print_block(block: &Block, indent: usize) {
    }
 }
 
+fn print_labels(labels: &Vec<Label>, indent: usize) {
+   let indentation = " ".repeat(indent);
+   for label in labels {
+      print!("{}Label: {}", indentation, label.name);
+   }
+}
+
 fn print_stmt(stmt: &Stmt, indent: usize) {
    let indentation = " ".repeat(indent);
    match stmt {
-      Stmt::Return(expr, _, _) => {
+      Stmt::Return(expr, labels, _) => {
          println!("{}Return:", indentation);
+         print_labels(labels, indent + INDENT_SIZE);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::Expression(expr, _, _) => {
+      Stmt::Expression(expr, labels, _) => {
          println!("{}Expression:", indentation);
+         print_labels(labels, indent + INDENT_SIZE);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::Null(_, _) => {
+      Stmt::Null(labels, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}NULL", indentation);
       },
-      Stmt::If(expr, then, else_stmt, _, _) => {
+      Stmt::If(expr, then, else_stmt, labels, _) => {
          println!("{}If ", indentation);
+         print_labels(labels, indent + INDENT_SIZE);
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(then, indent + INDENT_SIZE);
          if let Some(stmt) = else_stmt {
             print_stmt(&stmt, indent + INDENT_SIZE);
          }
       },
-      Stmt::Compound(block, _, _) => {
+      Stmt::Compound(block, labels, _) => {
          println!("{}Compound:", indentation);
+         print_labels(labels, indent + INDENT_SIZE);
          print_block(block, indent + INDENT_SIZE);
       },
-      Stmt::Break(_, _, _) => {
+      Stmt::Break(_, labels, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}Break", indentation);
       },
-      Stmt::Continue(_, _, _) => {
+      Stmt::Continue(_, labels, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}Continue", indentation);
       },
-      Stmt::While(expr, body, _, _) => {
+      Stmt::While(expr, body, labels, _) => {
          println!("{}While ", indentation);
+         print_labels(labels, indent + INDENT_SIZE);
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(body, indent + INDENT_SIZE);
       },
-      Stmt::DoWhile(body, expr , _, _) => {
+      Stmt::DoWhile(body, expr , labels, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}DoWhile:", indentation);
          print_stmt(body, indent + INDENT_SIZE);
          print_expr(expr, indent + INDENT_SIZE);
       },
-      Stmt::For(init, condition, increment, body, _, _) => {
+      Stmt::For(init, condition, increment, body, labels, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}For:", indentation);
+         print_labels(labels, indent + INDENT_SIZE);
          match init {
             Some(ForInit::Decl(decl)) => {
                println!("{}Init Decl: ", indentation);
@@ -116,12 +134,14 @@ fn print_stmt(stmt: &Stmt, indent: usize) {
          }
          print_stmt(body, indent + INDENT_SIZE);
       },
-      Stmt::Switch(expr, stmt, ..) => {
+      Stmt::Switch(expr, stmt, labels, _, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}Switch:", indentation);
          print_expr(expr, indent + INDENT_SIZE);
          print_stmt(stmt, indent + INDENT_SIZE);
       },
-      Stmt::Goto(label, _, _) => {
+      Stmt::Goto(label, labels, _) => {
+         print_labels(labels, indent + INDENT_SIZE);
          println!("{}Goto: {}", indentation, label);
       }
    }
