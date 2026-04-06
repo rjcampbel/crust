@@ -57,10 +57,10 @@ To facilitate my C compiler journey, I am following in the footsteps of many bef
   - [x] Variable scope resolutions
   - [x] If statements with compound statements
   - [x] Function `main` can now include arbitrary levels of nested scopes 
-- [ ] Chapter 8 - Loops
+- [x] Chapter 8 - Loops
   - [x] `while`, `do`...`while`, `for` loops
   - [x] `continue`, `break`
-  - [ ] Extra Credit: `switch` statements
+  - [x] Extra Credit: `switch` statements
 - [x] Chapter 9 - Functions
 - [x] Chapter 10 - File Scope Variable Declarations and Storage-Class Specifiers
 
