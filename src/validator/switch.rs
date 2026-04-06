@@ -100,7 +100,7 @@ fn validate_switch_info(switch_info: &SwitchInfo) -> Result<()> {
 
 fn validate_labels(labels: &Vec<Label>, switch_info: &Option<&SwitchInfo>) -> Result<()> {
    for label in labels {
-      if let None = switch_info && (label.name == "default" || label.name == "case") {
+      if let None = switch_info && (label.name.starts_with("default.") || label.name.starts_with("case.")) {
          bail!(error(label.line_number, format!("{} label outside of switch statement", label.name), ErrorType::SemanticError))
       }
    }

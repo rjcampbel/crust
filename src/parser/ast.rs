@@ -64,13 +64,13 @@ pub enum Stmt {
    Expression(Expr, Vec<Label>, ()),
    If(Expr, Box<Stmt>, Option<Box<Stmt>>, Vec<Label>, ()),
    Compound(Block, Vec<Label>, ()),
-   Break(Label, Vec<Label>, usize),
-   Continue(Label, Vec<Label>, usize),
+   Break(String, Vec<Label>, usize),
+   Continue(String, Vec<Label>, usize),
    While(Expr, Box<Stmt>, Vec<Label>, usize),
    DoWhile(Box<Stmt>, Expr, Vec<Label>, usize),
    For(Option<ForInit>, Option<Expr>, Option<Expr>, Box<Stmt>, Vec<Label>, usize),
    Goto(String, Vec<Label>, usize),
-   Switch(Expr, Box<Stmt>, Vec<Label>, SwitchInfo, usize),
+   Switch(Expr, Box<Stmt>, Vec<Label>, SwitchInfo, ()),
    Null(Vec<Label>, ()),
 }
 
@@ -78,11 +78,13 @@ pub enum Stmt {
 pub struct SwitchInfo {
    pub cases: HashSet<CaseInfo>,
    pub default: Option<()>,
+   pub end_label: String,
 }
 
 #[derive(Clone)]
 pub struct CaseInfo {
    pub value: Expr,
+   pub label: Label,
    pub line_number: usize,
 }
 
@@ -104,12 +106,6 @@ impl PartialEq for CaseInfo {
 pub struct Label {
    pub name: String,
    pub line_number: usize,
-}
-
-impl From<&str> for Label {
-   fn from(item: &str) -> Self {
-      Self { name: item.to_string(), line_number: 0 }
-   }
 }
 
 impl PartialEq for Label {

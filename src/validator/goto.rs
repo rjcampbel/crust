@@ -55,14 +55,11 @@ fn validate_block_goto_stmts(block: &mut Block, labels: &Labels) -> Result<()> {
 
 fn validate_stmt_goto_stmts(stmt: &mut Stmt, labels: &Labels) -> Result<()> {
    match stmt {
-      Stmt::Break(_, _, _) => {
-      },
+      Stmt::Break(..) => (),
       Stmt::Compound(block, _, _) => {
          validate_block_goto_stmts(block, labels)?
       },
-      Stmt::Continue(label, _, line_number) => {
-         validate_jump_label(&mut label.name, labels, *line_number)?
-      },
+      Stmt::Continue(..) => (),
       Stmt::DoWhile(body, _, _, _) => {
          validate_stmt_goto_stmts(&mut *body, labels)?
       },
@@ -176,15 +173,14 @@ fn validate_labels(stmt_labels: &mut Vec<Label>, func_labels: &mut Labels) -> Re
 }
 
 fn validate_label(stmt_label: &mut Label, func_labels: &mut Labels) -> Result<()> {
-   if stmt_label.name != "case" && stmt_label.name != "default" {
+   if !stmt_label.name.starts_with("case.") && !stmt_label.name.starts_with("default.") && !stmt_label.name.starts_with("for.") && !stmt_label.name.starts_with("while.") && !stmt_label.name.starts_with("dowhile.") {
       if let Some(label) = func_labels.get(&stmt_label.name) {
             bail!(error(stmt_label.line_number, format!("Duplicate label: {}", label), error::ErrorType::SemanticError))
       } else {
-         let unique_name = name_generator::uniquify_identifier(&stmt_label.name);
+         let unique_name = name_generator::gen_label(&stmt_label.name);
          func_labels.insert(stmt_label.name.clone(), unique_name.clone());
          stmt_label.name = unique_name.clone();
       }
    }
    Ok(())
 }
-

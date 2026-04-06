@@ -138,11 +138,11 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
         },
         Stmt::Break(label, labels, _) => {
             add_labels(&labels, instrs);
-            instrs.push(Instr::Jump("break_".to_string() + &label.name));
+            instrs.push(Instr::Jump("break_".to_string() + &label));
         },
         Stmt::Continue(label, labels, _) => {
             add_labels(&labels, instrs);
-            instrs.push(Instr::Jump("continue_".to_string() + &label.name));
+            instrs.push(Instr::Jump("continue_".to_string() + &label));
         },
         Stmt::DoWhile(body, condition, labels, _) => {
             add_labels(&labels, instrs);
@@ -200,7 +200,22 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
             add_labels(&labels, instrs);
             instrs.push(Instr::Jump(label));
         },
-        _ => todo!()
+        Stmt::Switch(expr, body, labels, switch_info, _) => {
+            let end_label = switch_info.end_label.clone();
+            let switch_info = Some(switch_info);
+            add_labels(&labels, instrs);
+            let val = gen_expr_instrs(expr, instrs)?;
+            for case in &switch_info.as_ref().unwrap().cases {
+                let Expr::Integer(i) = case.value else {
+                    unreachable!();
+                };
+                instrs.push(Instr::Binary(BinaryOp::Equal, val.clone(), Val::Integer(i), Val::Var(name_generator::gen_tmp_name())));
+                instrs.push(Instr::JumpIfNotZero(Val::Var(name_generator::gen_tmp_name()), case.label.name.clone()));
+            }
+
+            generate_stmt_instrs(*body, instrs, symbol_table)?;
+            instrs.push(Instr::Label("break_".to_string() + &end_label));
+        }
     };
     Ok(())
 }
@@ -338,4 +353,3 @@ fn gen_logical_or(left: Box<Expr>, right: Box<Expr>, instrs: &mut Vec<Instr>) ->
     instrs.push(Instr::Label(end_label));
     Ok(dest)
 }
-

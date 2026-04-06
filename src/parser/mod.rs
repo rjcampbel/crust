@@ -1,9 +1,10 @@
 pub mod ast;
 pub mod ast_printer;
 
-use crate::error;
 use crate::lexer::token::{Token, TokenType};
 use crate::validator::symbol_table::SymbolTable;
+use crate::error;
+use crate::name_generator;
 
 use anyhow::{bail, Result};
 use ast::*;
@@ -351,8 +352,9 @@ impl Parser {
             },
             TokenType::Default => {
                self.advance();
-               let line_number = self.previous().as_ref().unwrap().line_number;
-               let label = Label::new(self.previous().as_ref().unwrap().lexeme.clone(), line_number);
+               let token = self.previous().as_ref().unwrap();
+               let line_number = token.line_number;
+               let label = Label::new(name_generator::gen_label(&token.lexeme.clone()), line_number);
                self.consume(TokenType::Colon)?;
                let switch_info = self.switch_context_stack.last_mut();
                if let Some(switch_info) = switch_info {
@@ -371,12 +373,12 @@ impl Parser {
                let line_number = self.previous().as_ref().unwrap().line_number;
                let name = self.previous().as_ref().unwrap().lexeme.clone();
                let expr = self.expression(Precedence::None)?;
-               let label = Label { name , line_number };
-               labels.push(label);
+               let label = Label::new(name_generator::gen_label(&name), line_number);
+               labels.push(label.clone());
                self.consume(TokenType::Colon)?;
                let switch_info = self.switch_context_stack.last_mut();
                if let Some(switch_info) = switch_info {
-                  if !switch_info.cases.insert(CaseInfo { value: expr.clone(), line_number }) {
+                  if !switch_info.cases.insert(CaseInfo { value: expr.clone(), label: label, line_number }) {
                      bail!(error::error(line_number, format!("Duplicate case label"), error::ErrorType::SemanticError))
                   }
                } else {
@@ -478,15 +480,14 @@ impl Parser {
          },
          TokenType::Switch => {
             self.advance();
-            let line_number = self.previous().as_ref().unwrap().line_number;
             self.consume(TokenType::OpenParen)?;
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::CloseParen)?;
-            let switch_info = SwitchInfo { cases: HashSet::new(), default: None };
+            let switch_info = SwitchInfo { cases: HashSet::new(), end_label: name_generator::gen_label("switch_end"), default: None };
             self.switch_context_stack.push(switch_info);
             let stmt = self.statement()?;
             let switch_info = self.switch_context_stack.pop().unwrap();
-            Ok(Stmt::Switch(expr, Box::new(stmt), labels, switch_info, line_number))
+            Ok(Stmt::Switch(expr, Box::new(stmt), labels, switch_info, ()))
          },
          _ => {
             let expr = self.expression(Precedence::None)?;
