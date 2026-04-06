@@ -1,6 +1,5 @@
 use crate::validator::symbol_table::SymbolTable;
 
-use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 
 pub struct AST {
@@ -76,8 +75,8 @@ pub enum Stmt {
 
 #[derive(Clone)]
 pub struct SwitchInfo {
-   pub cases: HashSet<CaseInfo>,
-   pub default: Option<()>,
+   pub cases: Vec<CaseInfo>,
+   pub default: Option<Label>,
    pub end_label: String,
 }
 

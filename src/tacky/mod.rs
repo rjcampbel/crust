@@ -209,10 +209,14 @@ fn generate_stmt_instrs(stmt: ast::Stmt, instrs: &mut Vec<Instr>, symbol_table: 
                 let Expr::Integer(i) = case.value else {
                     unreachable!();
                 };
-                instrs.push(Instr::Binary(BinaryOp::Equal, val.clone(), Val::Integer(i), Val::Var(name_generator::gen_tmp_name())));
-                instrs.push(Instr::JumpIfNotZero(Val::Var(name_generator::gen_tmp_name()), case.label.name.clone()));
+                let dest = Val::Var(name_generator::gen_tmp_name());
+                instrs.push(Instr::Binary(BinaryOp::Equal, val.clone(), Val::Integer(i), dest.clone()));
+                instrs.push(Instr::JumpIfNotZero(dest, case.label.name.clone()));
             }
-
+            if let Some(default) = switch_info.unwrap().default {
+                instrs.push(Instr::Jump(default.name.clone()));
+            }
+            instrs.push(Instr::Jump("break_".to_string() + &end_label));
             generate_stmt_instrs(*body, instrs, symbol_table)?;
             instrs.push(Instr::Label("break_".to_string() + &end_label));
         }

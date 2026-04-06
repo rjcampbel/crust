@@ -1,6 +1,7 @@
 use anyhow::{bail, Result};
 use crate::error::{error, ErrorType};
 use crate::parser::ast::*;
+use std::collections::HashSet;
 
 pub fn validate(program: &Program) -> Result<()> {
    for decl in &program.decls {
@@ -95,7 +96,19 @@ fn validate_switch_info(switch_info: &SwitchInfo) -> Result<()> {
          bail!(error(case.line_number, format!("case label must be an integer constant expression"), ErrorType::SemanticError))
       };
    }
+   find_duplicates(&switch_info.cases)?;
    Ok(())
+}
+
+fn find_duplicates(cases: &Vec<CaseInfo>) -> Result<()> {
+    let mut seen = HashSet::new();
+
+    for case in cases {
+        if !seen.insert(case.clone()) {
+            bail!(error(case.line_number, format!("Duplicate case label"), ErrorType::SemanticError))
+        }
+    }
+    Ok(())
 }
 
 fn validate_labels(labels: &Vec<Label>, switch_info: &Option<&SwitchInfo>) -> Result<()> {

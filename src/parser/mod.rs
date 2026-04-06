@@ -9,7 +9,6 @@ use crate::name_generator;
 use anyhow::{bail, Result};
 use ast::*;
 use num::traits::FromPrimitive;
-use std::collections::HashSet;
 
 #[derive(PartialEq, PartialOrd, Clone, Copy, FromPrimitive)]
 #[repr(u8)]
@@ -361,7 +360,7 @@ impl Parser {
                   if switch_info.default.is_some() {
                      bail!(error::error(label.line_number, format!("Multiple default labels in one switch statement"), error::ErrorType::SemanticError))
                   } else {
-                     switch_info.default = Some(());
+                     switch_info.default = Some(label.clone());
                   }
                } else {
                   bail!(error::error(label.line_number, format!("default label outside of switch statement"), error::ErrorType::SemanticError))
@@ -378,9 +377,7 @@ impl Parser {
                self.consume(TokenType::Colon)?;
                let switch_info = self.switch_context_stack.last_mut();
                if let Some(switch_info) = switch_info {
-                  if !switch_info.cases.insert(CaseInfo { value: expr.clone(), label: label, line_number }) {
-                     bail!(error::error(line_number, format!("Duplicate case label"), error::ErrorType::SemanticError))
-                  }
+                  switch_info.cases.push(CaseInfo { value: expr.clone(), label: label, line_number });
                } else {
                   bail!(error::error(line_number, format!("case label outside of switch statement"), error::ErrorType::SemanticError))
                }
@@ -483,7 +480,7 @@ impl Parser {
             self.consume(TokenType::OpenParen)?;
             let expr = self.expression(Precedence::None)?;
             self.consume(TokenType::CloseParen)?;
-            let switch_info = SwitchInfo { cases: HashSet::new(), end_label: name_generator::gen_label("switch_end"), default: None };
+            let switch_info = SwitchInfo { cases: Vec::new(), end_label: name_generator::gen_label("switch_end"), default: None };
             self.switch_context_stack.push(switch_info);
             let stmt = self.statement()?;
             let switch_info = self.switch_context_stack.pop().unwrap();
